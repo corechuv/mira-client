@@ -55,7 +55,6 @@ export default function Footer() {
             <Link to="/catalog">Каталог</Link>
             <Link to="/profile?tab=orders">Заказы</Link>
             <Link to="/profile">Профиль</Link>
-            <Link to="/checkout">Оформление</Link>
           </nav>
         </div>
 
