@@ -16,7 +16,7 @@ const payments: IconItem[] = [
 ];
 
 const shipping: IconItem[] = [
-  { src: "/icons/dhl.svg",         alt: "DHL",         h: 14, hSm: 20 },
+  { src: "/icons/dhl.svg",         alt: "DHL",         h: 12, hSm: 12 },
 ];
 
 const socials: IconItem[] = [
