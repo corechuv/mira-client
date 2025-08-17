@@ -43,7 +43,7 @@ export default function Cart() {
             <span>Итого</span>
             <b>{fmtEUR(total)}</b>
           </div>
-          <Link to="/checkout" className="btn btnPrimary">Перейти к оформлению</Link>
+          <Link to="/checkout" className="btn btnPrimary btn100">Перейти к оформлению</Link>
         </aside>
       </div>
     </div>

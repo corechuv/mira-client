@@ -93,9 +93,6 @@ export default function Catalog() {
         <div className={styles.sheetBody}>
           <FiltersPanel inModal onApply={()=>setOpenSheet(false)} />
         </div>
-        <div className={styles.sheetFooter}>
-          <button className="btn" onClick={()=>setOpenSheet(false)}>Закрыть</button>
-        </div>
       </Modal>
     </div>
   );

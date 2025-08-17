@@ -22,7 +22,7 @@
 }
 
 /* bottom-sheet content extras */
-.sheetBody { display: grid; gap: .6rem; }
+.sheetBody { display: grid; gap: .6rem; padding: 1.2rem 0; padding-left: 0.4rem; padding-right: 0.4rem; }
 .sheetFooter {
   position: sticky; bottom: 0;
   padding: .6rem; margin-top: .6rem;
