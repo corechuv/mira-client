@@ -88,3 +88,9 @@
   display: grid; grid-template-columns: 1fr auto;
   align-items: center; gap: .6rem;
 }
+
+@media (max-width: 900px) {
+  .form { padding: 1rem 0; }
+
+  .item { padding: 1rem 0; }
+}

@@ -60,6 +60,13 @@ button {
   backdrop-filter: blur(6px);
 }
 
+.card-item {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 18px;
+  backdrop-filter: blur(6px);
+}
+
 .row {
   display: grid;
   gap: 1rem;
@@ -67,8 +74,28 @@ button {
 }
 
 @media (max-width: 900px) {
+  .card {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+  }
+
+  .card-item {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
   .row {
     grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+
+  .row {
+    grid-template-columns: repeat(4, 1fr);
   }
 }
 

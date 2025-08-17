@@ -161,7 +161,7 @@ export default function Reviews({ productId }: Props) {
 
       <div className={styles.list}>
         {shown.map(r => (
-          <article key={r.id} className={`card ${styles.item}`}>
+          <article key={r.id} className={`card-item ${styles.item}`}>
             <header className={styles.itemHead}>
               <div className={styles.author}>{r.author}</div>
               <div className={styles.meta}>
