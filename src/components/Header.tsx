@@ -46,7 +46,7 @@ export default function Header() {
         isOpen={drawerOpen}
         onClose={() => setDrawerOpen(false)}
         title="Категории"
-        width={380}
+        width={320}
         side="right"
       >
         <CategoryDrawer onClose={() => setDrawerOpen(false)} />
