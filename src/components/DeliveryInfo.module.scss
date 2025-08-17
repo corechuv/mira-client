@@ -34,16 +34,17 @@
 .left { min-width: 0; }
 .title { font-weight: 700; }
 .sub { color: var(--muted); font-size: .9rem; }
-.right { text-align: right; }
+.right { text-align: right; b {
+  font-weight: 500;
+}}
 .note { color: var(--muted); font-size: .85rem; margin-top: .1rem; }
 
-.free { color: #57e389; }
+.free { color: #57e389; font-weight: 500; }
 .freeBadge {
   display: inline-flex; align-items: center; gap: .3rem;
   padding: .1rem .45rem;
   border-radius: 999px;
   background: rgba(87,227,137,0.15);
-  border: 1px solid rgba(87,227,137,0.35);
   font-size: .8rem;
 }
 
