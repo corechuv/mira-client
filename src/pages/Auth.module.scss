@@ -1,0 +1,114 @@
+.shell {
+    min-height: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: grid;
+    place-items: center;
+    padding: 1.2rem;
+    background:
+        radial-gradient(60% 40% at 100% 0%, rgba(136, 42, 83, 0.18), transparent),
+        linear-gradient(180deg, #0e0e12, #0a0a0d);
+}
+
+.card {
+    width: min(420px, 100%);
+    background: var(--surface);
+    border-radius: 16px;
+    padding: clamp(1rem, 4vw, 1.4rem);
+    display: grid;
+    gap: .8rem;
+}
+
+.logo {
+    width: 70px;
+    height: 70px;
+    margin: 0 auto;
+    display: block;
+    margin-top: 20px;
+    margin-bottom: 30px;
+}
+
+.tabs {
+    display: grid;
+    grid-auto-flow: column;
+    justify-content: start;
+    gap: .4rem;
+    margin-bottom: .2rem;
+}
+
+.tab,
+.tabActive {
+    padding: .45rem .8rem;
+    border-radius: 10px;
+    border: transparent;
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--muted);
+    cursor: pointer;
+}
+
+.tabActive {
+    background: rgba(255, 46, 138, 0.12);
+    color: #fff;
+    border-color: rgba(255, 46, 138, 0.45);
+}
+
+.error {
+    background: rgba(255, 0, 0, 0.12);
+    border: 1px solid rgba(255, 0, 0, 0.3);
+    color: #ffb3b3;
+    border-radius: 10px;
+    padding: .5rem .7rem;
+    font-size: .95rem;
+}
+
+.form {
+    display: grid;
+    gap: .7rem;
+}
+
+.field {
+    display: grid;
+    gap: .3rem;
+}
+
+.field span {
+    color: var(--muted);
+    font-size: .95rem;
+}
+
+.check {
+    display: flex;
+    gap: .6rem;
+    align-items: center;
+    color: var(--muted);
+}
+
+.alt {
+    color: var(--muted);
+}
+
+.linkBtn {
+    background: transparent;
+    border: 0;
+    color: #fff;
+    cursor: pointer;
+    padding: 0 .2rem;
+}
+
+.linkBtn:hover {
+    text-decoration: underline;
+}
+
+.backRow {
+    display: flex;
+    justify-content: center;
+    padding-top: .4rem;
+}
+
+@media (max-width: 560px) {
+    .card {
+        padding: 1rem;
+    }
+}

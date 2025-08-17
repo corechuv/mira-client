@@ -1,0 +1,40 @@
+.wrap { display: grid; gap: .6rem; }
+.toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .2rem .2rem .4rem;
+}
+.breadcrumbs { color: var(--muted); }
+
+.viewport {
+  position: relative;
+  display: flex;
+}
+
+.track {
+  width: 300%;
+  display: grid;
+  grid-template-columns: repeat(3, 100%);
+  transition: transform .22s ease;
+}
+
+.col {
+  list-style: none;
+  margin: 0;
+  padding: .2rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.item {
+  width: 100%;
+  text-align: left;
+  justify-content: space-between;
+  align-items: center;
+  gap: .8rem;
+  padding: .9rem 1rem;
+  background: transparent;
+  border: 0;
+  color: var(--text);
+  cursor: pointer;
+}
+.chev { opacity: .7; float: right; }

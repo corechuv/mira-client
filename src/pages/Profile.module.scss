@@ -1,0 +1,66 @@
+/* Tabs */
+.tabs { display: grid; grid-auto-flow: column; gap: .5rem; align-items: center; margin-bottom: .8rem; }
+.tab, .tabActive {
+  padding: .45rem .8rem; border-radius: 10px; cursor: pointer;
+  border: 1px solid transparent; background: rgba(255,255,255,0.03); color: var(--muted);
+}
+.tabActive { background: rgba(255,46,138,0.12); border-color: transparent; color: #fff; }
+.spacer { flex: 1; }
+
+/* Forms common */
+.form { padding: 1rem; display: grid; gap: .8rem; }
+.twoCols { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; }
+.field { display: grid; gap: .3rem; }
+.field span { color: var(--muted); font-size: .95rem; }
+.hint { color: var(--muted); font-size: .9rem; }
+
+/* Addresses */
+.addrWrap { display: grid; gap: .8rem; }
+.addrHead { display: flex; align-items: center; justify-content: space-between; }
+.addrList { display: grid; gap: .8rem; }
+.addrCard { padding: .8rem; }
+.addrTop { display: flex; align-items: flex-start; justify-content: space-between; gap: .8rem; }
+.addrLines { display: grid; gap: .2rem; }
+.addrBadges { display: flex; gap: .4rem; }
+.addrActions { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: .6rem; }
+
+.checkInline { display: inline-flex; gap: .5rem; align-items: center; color: var(--muted); }
+.formHead { display: flex; align-items: center; justify-content: space-between; }
+.formActions { display: flex; gap: .6rem; justify-content: end; }
+
+/* Packstation card */
+.packCard { padding: .8rem; display: grid; gap: .6rem; }
+.packTitle { font-weight: 700; }
+.packHint { color: var(--muted); font-size: .9rem; }
+
+/* Orders */
+.ordersWrap { display: grid; gap: .8rem; }
+.orderList { display: grid; gap: .8rem; }
+.orderCard { padding: .8rem; }
+.orderHead { display: flex; align-items: center; justify-content: space-between; gap: .6rem; }
+.orderBadges { display: flex; gap: .4rem; flex-wrap: wrap; }
+
+.items { display: grid; gap: .6rem; }
+.itemRow { display: grid; grid-template-columns: 1fr auto auto; gap: .6rem; align-items: center; }
+.itemLeft { display: flex; gap: .6rem; align-items: center; }
+.thumb {
+  width: 44px; height: 44px; border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.itemTitle { font-weight: 600; }
+.itemQty { color: var(--muted); }
+.itemSum { text-align: right; }
+.totalRow { display: flex; align-items: center; justify-content: space-between; font-weight: 800; }
+
+/* Empty */
+.empty { padding: 1rem; display: grid; gap: .6rem; max-width: 560px; }
+.emptyActions { display: flex; gap: .6rem; flex-wrap: wrap; }
+
+.muted { color: var(--muted); }
+
+/* Adaptive */
+@media (max-width: 900px) {
+  .twoCols { grid-template-columns: 1fr; }
+  .itemRow { grid-template-columns: 1fr auto; }
+  .itemSum { grid-column: 2 / 3; }
+}

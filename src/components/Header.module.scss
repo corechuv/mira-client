@@ -1,0 +1,58 @@
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: linear-gradient(180deg, rgba(10,10,10,0.9), rgba(10,10,10,0.6));
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .8rem 0;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  font-weight: 700;
+  letter-spacing: .3px;
+}
+
+.logoImage {
+  width: 32px;
+  height: 32px;
+  object-fit: cover;
+}
+
+.nav {
+  display: none;           /* скрыто на мобилке */
+  align-items: center;
+  gap: 1rem;
+}
+
+.navItem {
+  padding: .6rem .8rem;
+  border-radius: 12px;
+  transition: background .2s ease, color .2s ease;
+}
+
+.navItem:hover {
+  background: rgba(255,46,138,0.1);
+  color: white;
+}
+
+.cart {
+  display: inline-flex;
+  align-items: center;
+  gap: .6rem;
+}
+
+/* показываем десктопную навигацию только на >800px */
+@media (min-width: 801px) {
+  .nav { display: flex; }
+}

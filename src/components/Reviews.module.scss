@@ -1,0 +1,90 @@
+.wrap { margin: 1.2rem 0 2rem; display: grid; gap: 1rem; }
+
+.head {
+  display: grid;
+  gap: .8rem;
+  grid-template-columns: 280px 1fr auto;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .head { grid-template-columns: 1fr; }
+}
+
+.score {
+  display: grid;
+  gap: .4rem;
+  justify-items: start;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 14px;
+}
+.avg { font-size: 4.9rem; font-weight: 800; }
+.total { color: var(--muted); font-size: .9rem; }
+
+.dist {
+  list-style: none; margin: 0; padding: 0;
+  display: grid; gap: .4rem;
+}
+.distRow {
+  display: grid;
+  grid-template-columns: 56px 1fr 48px;
+  gap: .6rem;
+  align-items: center;
+}
+.badge {
+  display: inline-flex; justify-content: center; align-items: center;
+  padding: .35rem .6rem;
+  border-radius: 999px;
+  border: none;
+  background: rgba(255, 46, 137, 0.04);
+  color: var(--pink);
+  cursor: pointer;
+}
+.badgeActive { background: rgba(255,46,138,0.22); border-color: rgba(255,46,138,0.45); }
+.bar {
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.06);
+  overflow: hidden;
+}
+.bar span {
+  display: block; height: 100%;
+  background: linear-gradient(90deg, var(--pink), var(--pink-700));
+}
+.count { text-align: right; color: var(--muted); }
+
+.controls { align-self: start; }
+
+.list { display: grid; gap: .8rem; }
+.item { padding: .8rem; }
+.itemHead {
+  display: flex; align-items: center; justify-content: space-between; gap: .6rem;
+  margin-bottom: .4rem;
+}
+.author { font-weight: 700; }
+.meta { display: flex; align-items: center; gap: .6rem; color: var(--muted); }
+.date { font-size: .9rem; }
+.text { margin: .4rem 0 .6rem; color: var(--text); }
+.itemFoot { display: flex; gap: .4rem; }
+
+.moreRow { display: flex; justify-content: center; }
+
+.form { display: grid; gap: .6rem; padding: 1rem; }
+.formTitle { margin: 0 0 .2rem 0; }
+
+.stars { display: inline-flex; gap: .2rem; }
+.sm button { font-size: 14px; }
+.md button { font-size: 20px; }
+.starOn, .starOff {
+  background: transparent; border: 0; padding: 0; cursor: default; line-height: 1;
+  filter: drop-shadow(0 2px 6px rgba(255,46,138,.2));
+}
+.starOn { color: var(--pink); }
+.starOff { color: rgba(255,255,255,0.25); }
+.stars button { cursor: pointer; }
+
+.ratingRow {
+  display: grid; grid-template-columns: 1fr auto;
+  align-items: center; gap: .6rem;
+}

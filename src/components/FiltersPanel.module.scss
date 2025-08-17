@@ -1,0 +1,92 @@
+.panel { display: grid; gap: 2.6rem; }
+
+/* поля */
+.field { display: grid; gap: .3rem; }
+.field > span { color: var(--muted); font-size: .9rem; }
+
+.group { display: grid; gap: 0.6rem; }
+.groupTitle { font-weight: 700; }
+
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
+
+.chips { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; }
+
+.priceRow { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
+.priceField { display: grid; gap: .3rem; }
+.priceField > span { color: var(--muted); font-size: .85rem; }
+
+/* ===== RANGE (dual) ===== */
+.rangeWrap {
+  position: relative;
+  height: 3px;                 /* компактнее */
+  border-radius: 8px;
+  background: rgba(255,255,255,.12); /* сюда кладём общую заливку через inline-style */
+  display: grid; align-items: center;
+  padding: 0 .2rem;
+  outline: 1px solid rgba(255,255,255,0.12);
+  margin-top: 10px;
+}
+
+/* оба инпута лежат друг на друге */
+.range {
+  position: absolute; left: 0; right: 0; top: 0; bottom: 0;
+  width: 100%;
+  background: none;
+  -webkit-appearance: none; appearance: none;
+  margin: 0;
+  touch-action: none;
+
+  /* КРИТИЧЕСКОЕ: клики по дорожке отключены,
+     работать будут только «бегунки» */
+  pointer-events: none;
+}
+
+/* дорожка как фон не нужна — рисуем её у .rangeWrap */
+.range::-webkit-slider-runnable-track { height: 4px; background: transparent; border-radius: 4px; }
+.range::-moz-range-track { height: 4px; background: transparent; border-radius: 4px; }
+
+/* бегунки — только они кликабельны */
+.range::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #fff; border: 2px solid var(--pink);
+  box-shadow: 0 0 0 2px rgba(0,0,0,.15);
+  margin-top: -6px;
+  pointer-events: auto;          /* ← включаем события */
+}
+.range::-moz-range-thumb {
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #fff; border: 2px solid var(--pink);
+  box-shadow: 0 0 0 2px rgba(0,0,0,.15);
+  pointer-events: auto;          /* ← включаем события */
+}
+
+.range:focus-visible { outline: none; }
+.range:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px rgba(255,46,138,.35); }
+.range:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px rgba(255,46,138,.35); }
+
+.rangeLabels {
+  display: flex; justify-content: space-between;
+  color: var(--muted); font-size: .85rem;
+}
+
+/* рейтинг */
+.ratingChips { display: flex; gap: .4rem; flex-wrap: wrap; }
+.chip, .chipActive {
+  padding: .35rem .6rem; border-radius: 999px;
+  border: 1px solid transparent;
+  background: rgba(255,255,255,0.04);
+  color: var(--text);
+}
+.chipActive {
+  background: rgba(255,46,138,0.12);
+  border-color: transparent;
+}
+
+/* кнопки */
+.actions { display: flex; gap: .6rem; flex-wrap: wrap; }
+
+/* adaptive */
+@media (max-width: 820px) {
+  .grid2, .priceRow { grid-template-columns: 1fr; }
+}

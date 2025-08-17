@@ -1,0 +1,41 @@
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 1rem;
+}
+.form { display: grid; gap: .8rem; padding: 1rem; }
+.aside { padding: 1rem; align-self: start; }
+
+.testNote {
+  background: rgba(255,46,138,0.1);
+  border: 1px solid rgba(255,46,138,0.35);
+  border-radius: 10px;
+  padding: .6rem .8rem;
+  font-size: .9rem;
+}
+
+.twoCols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .8rem;
+}
+.twoColsInner {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .8rem;
+}
+
+.title { font-weight: 700; margin-bottom: .4rem; }
+.row { display: flex; align-items: center; justify-content: space-between; margin-bottom: .4rem; }
+.rowBig { display: flex; align-items: center; justify-content: space-between; font-weight: 800; font-size: 1.1rem; }
+.vatNote { color: var(--muted); font-size: .9rem; margin-top: .2rem; }
+.small { color: var(--muted); font-size: .95rem; }
+
+@media (max-width: 1000px) {
+  .grid { grid-template-columns: 1fr; }
+  .twoCols { grid-template-columns: 1fr; }
+  .twoColsInner { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 520px) {
+  .twoColsInner { grid-template-columns: 1fr; }
+}

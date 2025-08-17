@@ -1,0 +1,52 @@
+.hero {
+  padding: 2rem 0 1rem;
+  display: grid;
+}
+
+.heroCard {
+  padding: 2rem;
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(600px 300px at 110% -20%, rgba(255,46,138,0.35), transparent),
+    linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+}
+
+.heroCard::after {
+  content: "";
+  position: absolute;
+  right: -30px;
+  top: -30px;
+  width: 260px;
+  height: 260px;
+  background: radial-gradient(closest-side, rgba(255,46,138,0.35), transparent);
+  border-radius: 50%;
+  filter: blur(12px);
+}
+
+.badge {
+  display: inline-block;
+  padding: .35rem .6rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,46,138,0.10);
+  margin-bottom: .8rem;
+  text-transform: uppercase;
+  font-size: .75rem;
+  letter-spacing: .08em;
+}
+.title {
+  margin: 0;
+  line-height: 1.1;
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+}
+.subtitle {
+  color: var(--muted);
+  margin: .8rem 0 1.2rem;
+}
+.actions { display: flex; gap: .8rem; }
+
+.section { padding: 1rem 0 2rem; }
+.sectionHead {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;
+}

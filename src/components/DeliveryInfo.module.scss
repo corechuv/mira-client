@@ -1,0 +1,73 @@
+.card { margin-top: 1.5rem; }
+
+.head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: .8rem; margin-bottom: .6rem;
+}
+
+.qty {
+  display: inline-flex; align-items: center; gap: .6rem;
+  color: var(--muted);
+}
+.qtyLabel { font-size: .9rem; }
+.qtyCtrl { display: inline-flex; align-items: center; gap: .4rem; }
+.qtyInput {
+  width: 48px; text-align: center;
+  padding: .35rem .2rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12);
+  background: var(--surface); color: var(--text);
+}
+
+/* Доставка — аккуратный список */
+.shipList {
+  list-style: none; margin: 0; padding: 0;
+}
+.row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: .6rem;
+  align-items: center;
+  padding: .5rem 0;
+  border-bottom: 1px dashed rgba(255,255,255,0.12);
+}
+.row:last-child { border-bottom: 0; }
+
+.left { min-width: 0; }
+.title { font-weight: 700; }
+.sub { color: var(--muted); font-size: .9rem; }
+.right { text-align: right; }
+.note { color: var(--muted); font-size: .85rem; margin-top: .1rem; }
+
+.free { color: #57e389; }
+.freeBadge {
+  display: inline-flex; align-items: center; gap: .3rem;
+  padding: .1rem .45rem;
+  border-radius: 999px;
+  background: rgba(87,227,137,0.15);
+  border: 1px solid rgba(87,227,137,0.35);
+  font-size: .8rem;
+}
+
+/* Информация — также списком */
+.infoList {
+  list-style: none; margin: .6rem 0 0; padding: 0;
+  display: grid; gap: 0rem;
+}
+.infoList li {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: .6rem;
+  align-items: start;
+  padding: .8rem 0;
+  border-bottom: 1px dashed rgba(255,255,255,0.12);
+}
+.infoList li:last-child { border-bottom: 0; }
+.icon { color: var(--pink); margin-top: .15rem; }
+.infoTitle { font-weight: 700; margin-bottom: .2rem; }
+.infoText { color: var(--text); }
+.muted { color: var(--muted); }
+
+.hint { margin-top: .6rem; color: var(--muted); font-size: .9rem; }
+
+@media (max-width: 900px) {
+  .row { grid-template-columns: 1fr auto; }
+}

@@ -1,0 +1,54 @@
+import styles from "./Home.module.scss";
+import { Link } from "@/router/Router";
+import { useProducts } from "@/contexts/ProductsContext";
+import ProductCard from "@/components/ProductCard";
+import ProductsRail from "@/components/ProductsRail";
+import { products as allProducts } from "@/data/products"; // для длинной ленты
+
+export default function Home() {
+  const { products } = useProducts();
+  const top = products.slice(0, 4);
+  return (
+    <div className="container">
+      <section className={styles.hero}>
+        <div className={`card ${styles.heroCard}`}>
+          <div className={styles.heroGrid}>
+            <div className={styles.heroContent}>
+              <span className={styles.badge}>новинки</span>
+              <h1 className={styles.title}>Шото написать...</h1>
+              <p className={styles.subtitle}>
+                Шо то дописать, быстрый поиск и удобная доставка по Германии.
+              </p>
+              <div className={styles.actions}>
+                <Link to="/catalog" className="btn btnPrimary">В каталог</Link>
+                <Link to="/profile?tab=orders" className="btn">Мои заказы</Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <section className={styles.section}>
+        <div className={styles.sectionHead}>
+          <h2>Популярное</h2>
+          <Link to="/catalog" className="btn btnGhost">Весь каталог</Link>
+        </div>
+        <div className="row">
+          {top.map(p => (
+            <div key={p.id} style={{ gridColumn: "span 3" }}>
+              <ProductCard product={p} />
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <div className={styles.sectionHead}>
+          <h2>Рекомендуем</h2>
+        </div>
+        <ProductsRail items={allProducts} />
+      </section>
+    </div>
+  );
+}
