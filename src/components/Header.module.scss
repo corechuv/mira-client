@@ -2,9 +2,9 @@
   position: sticky;
   top: 0;
   z-index: 20;
-  background: linear-gradient(180deg, rgba(10,10,10,0.9), rgba(10,10,10,0.6));
+  background: linear-gradient(180deg, rgba(10, 10, 10, 0.9), rgba(10, 10, 10, 0.6));
   backdrop-filter: blur(8px);
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .bar {
@@ -30,20 +30,17 @@
 }
 
 .nav {
-  display: flex;           /* скрыто на мобилке */
+  display: flex;
+  /* скрыто на мобилке */
   align-items: center;
-  gap: 1rem;
+  gap: 2rem;
 }
 
 .navItem {
-  padding: .6rem .8rem;
-  border-radius: 12px;
+  position: relative;
+  display: flex;
+  padding: .6rem 0;
   transition: background .2s ease, color .2s ease;
-}
-
-.navItem:hover {
-  background: rgba(255,46,138,0.1);
-  color: white;
 }
 
 .cart {
@@ -60,4 +57,26 @@
   height: 2.5rem;
   transition: background .2s ease;
   cursor: pointer;
+}
+
+.countBadge {
+  position: absolute;
+  top: -4px;
+  right: -12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  font-size: .8rem;
+  border-radius: 50%;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(255, 46, 138, 0.1);
+  color: var(--text);
 }

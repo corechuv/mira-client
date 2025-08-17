@@ -29,7 +29,7 @@ export default function Header() {
             </Link>
             <Link to="/cart" className={`${styles.navItem} ${styles.cart}`}>
               <Icon name="bag" size="1.8rem" />
-              {totalQty > 0 && <span className="badge">{totalQty}</span>}
+              {totalQty > 0 && <span className={styles.countBadge}>{totalQty}</span>}
             </Link>
             <div
               className={styles.btnIcon}
