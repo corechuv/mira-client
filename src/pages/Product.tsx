@@ -77,7 +77,9 @@ export default function Product() {
       <div className={`card ${styles.wrap}`}>
         <div className={styles.left}>
           <div className={styles.gallery}>
-            <div className={styles.photo} />
+            <div className={styles.photo}>
+              <img src={product.imageUrl} alt={product.title} />
+            </div>
             <div className={styles.thumbs}>
               <div className={styles.thumb} />
               <div className={styles.thumb} />

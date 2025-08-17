@@ -9,7 +9,9 @@ export default function ProductCard({ product }: { product: Product }) {
   return (
     <div className={`${styles.card}`}>
       <Link to={`/product/${product.slug}`} className={styles.thumb} aria-label={product.title}>
-        <div className={styles.img} role="img" aria-label={product.title} />
+        <div className={styles.img} role="img" aria-label={product.title}>
+          <img src={product.imageUrl} alt={product.title} />
+        </div>
       </Link>
       <div className={styles.body}>
         <div className={styles.titleRow}>

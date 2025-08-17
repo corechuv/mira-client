@@ -2,13 +2,14 @@ export type Product = {
   id: string;
   slug: string;
   title: string;
-  category: "Электроника" | "Одежда" | "Дом" | "Спорт"; // 1-й уровень
+  category: "Электроника" | "Одежда" | "Дом" | "Спорт" | "Косметология" | "Витамины"; // 1-й уровень
   sub?: string;   // 2-й уровень (например: "Аудио")
   leaf?: string;  // 3-й уровень (например: "Наушники")
   price: number;
   rating: number;
   short: string;
   description: string;
+  imageUrl?: string;
 };
 
 export const products: Product[] = [
@@ -83,5 +84,16 @@ export const products: Product[] = [
     rating: 4.2,
     short: "Громкий звук при малом размере.",
     description: "Bluetooth 5.3, защита IP67, 12 часов музыки. Зарядка USB-C."
+  },
+  {
+    id: "p-7",
+    slug: "multivitamins",
+    title: "Sports Research, Phytoceramides Mini-Gels, 350 mg, 30 Softgels",
+    category: "Витамины",
+    price: 23.71,
+    rating: 4.5,
+    short: "Комплекс витаминов для поддержания здоровья.",
+    description: "350 mg Per Serving Supports Skin Hydration CeratiQ® Dietary Supplement Quality Matters: Igen Non-GMO Tested Gluten Free Third Party Tested cGMP Compliant SR® Phytoceramides with Lipowheat® is rich in glycosylceramides, phytoceramides and glycolipids, which may help support skin hydration when taken directed.",
+    imageUrl: "https://cloudinary.images-iherb.com/image/upload/f_auto,q_auto:eco/images/sre/sre00412/v/55.jpg"
   }
 ];
