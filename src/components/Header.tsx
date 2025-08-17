@@ -21,6 +21,9 @@ export default function Header() {
           </Link>
 
           <nav className={styles.nav}>
+            <Link to="/search" className={styles.navItem}>
+              <Icon name="search" size="1.8rem" />
+            </Link>
             <Link to="/profile?tab=orders" className={styles.navItem}>
               <Icon name="orders" size="1.8rem" />
             </Link>
