@@ -5,7 +5,7 @@ import { Link } from "@/router/Router";
 import { fmtEUR } from "@/utils/money";
 import { Address, loadAddresses, saveAddresses, emptyAddress } from "@/utils/addresses";
 
-type CartItem = { id: string; qty: number; title: string; price: number; slug: string };
+type CartItem = { id: string; qty: number; title: string; price: number; slug: string; imageUrl: string };
 type AnyOrder = {
   id: string;
   createdAt: string;
@@ -359,7 +359,9 @@ export default function Profile() {
                     {o.items.map(i => (
                       <div key={i.id} className={styles.itemRow}>
                         <div className={styles.itemLeft}>
-                          <div className={styles.thumb} />
+                          <div className={styles.thumb}>
+                            <img src={i.imageUrl} alt={i.title} />
+                          </div>
                           <div>
                             <div className={styles.itemTitle}>{i.title}</div>
                             <Link to={`/product/${i.slug}`}>Открыть товар</Link>

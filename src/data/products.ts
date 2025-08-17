@@ -23,7 +23,8 @@ export const products: Product[] = [
     price: 33,
     rating: 4.7,
     short: "Глубокий бас и розовый акцент.",
-    description: "Беспроводные наушники с активным шумодавом, зарядом до 30 часов и мягкими амбушюрами."
+    description: "Беспроводные наушники с активным шумодавом, зарядом до 30 часов и мягкими амбушюрами.",
+    imageUrl: "https://cloudinary.images-iherb.com/image/upload/f_auto,q_auto:eco/images/lex/lex22073/v/117.jpg"
   },
   {
     id: "p-2",
@@ -35,7 +36,8 @@ export const products: Product[] = [
     price: 340,
     rating: 4.8,
     short: "Минимализм: чёрный + белый.",
-    description: "Ветро- и влагозащита, мягкая подкладка, карманы с молниями и аккуратный силуэт."
+    description: "Ветро- и влагозащита, мягкая подкладка, карманы с молниями и аккуратный силуэт.",
+    imageUrl: "https://cloudinary.images-iherb.com/image/upload/f_auto,q_auto:eco/images/cob/cob09453/v/24.jpg"
   },
   {
     id: "p-3",
@@ -47,7 +49,8 @@ export const products: Product[] = [
     price: 30,
     rating: 4.6,
     short: "Тёплый свет и управление с телефона.",
-    description: "Поддержка сценариев, таймеров и режимов освещения. Потребление энергии снижено на 40%."
+    description: "Поддержка сценариев, таймеров и режимов освещения. Потребление энергии снижено на 40%.",
+    imageUrl: "https://cloudinary.images-iherb.com/image/upload/f_auto,q_auto:eco/images/lex/lex22073/v/117.jpg"
   },
   {
     id: "p-4",
@@ -59,19 +62,21 @@ export const products: Product[] = [
     price: 20,
     rating: 4.5,
     short: "Пульс, сон и активность 24/7.",
-    description: "Экран AMOLED, водозащита 5АТМ, уведомления и точный шагомер."
+    description: "Экран AMOLED, водозащита 5АТМ, уведомления и точный шагомер.",
+    imageUrl: "https://cloudinary.images-iherb.com/image/upload/f_auto,q_auto:eco/images/evl/evl10090/l/8.jpg"
   },
   {
     id: "p-5",
     slug: "minimal-sneakers",
-    title: "Кроссовки Minimal",
+    title: "JNX Sports, The Ripper, Fat Buner, Sour Candy, 5.3 oz (150 g",
     category: "Одежда",
     sub: "Обувь",
     leaf: "Кроссовки",
     price: 10,
     rating: 4.4,
     short: "Лёгкие и универсальные.",
-    description: "Дышащая сетка, амортизация и устойчивость. Отлично для города."
+    description: "Дышащая сетка, амортизация и устойчивость. Отлично для города.",
+    imageUrl: "https://cloudinary.images-iherb.com/image/upload/f_auto,q_auto:eco/images/cob/cob09453/v/24.jpg"
   },
   {
     id: "p-6",
@@ -83,7 +88,8 @@ export const products: Product[] = [
     price: 443,
     rating: 4.2,
     short: "Громкий звук при малом размере.",
-    description: "Bluetooth 5.3, защита IP67, 12 часов музыки. Зарядка USB-C."
+    description: "Bluetooth 5.3, защита IP67, 12 часов музыки. Зарядка USB-C.",
+    imageUrl: "https://cloudinary.images-iherb.com/image/upload/f_auto,q_auto:eco/images/lex/lex22073/v/117.jpg"
   },
   {
     id: "p-7",

@@ -16,7 +16,9 @@ export default function ProductCard({ product }: { product: Product }) {
       <div className={styles.body}>
         <div className={styles.titleRow}>
           <Link to={`/product/${product.slug}`} className={styles.title}>{product.title}</Link>
-          <span className="badge">{product.category}</span>
+          <div>
+            <span className="badge">{product.category}</span>
+          </div>
         </div>
         <p className={styles.desc}>{product.short}</p>
         <div className={styles.bar}>

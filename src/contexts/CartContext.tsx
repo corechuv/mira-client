@@ -7,6 +7,7 @@ export type CartItem = {
   price: number;
   title: string;
   slug: string;
+  imageUrl?: string;
 };
 
 type CartState = {
@@ -44,7 +45,7 @@ export const CartProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
           next[idx] = { ...next[idx], qty: next[idx].qty + qty };
           return next;
         }
-        return [...prev, { id: product.id, qty, price: product.price, title: product.title, slug: product.slug }];
+        return [...prev, { id: product.id, qty, price: product.price, title: product.title, slug: product.slug, imageUrl: product.imageUrl }];
       });
     };
     const remove = (id: string) => setItems(prev => prev.filter(i => i.id != id));

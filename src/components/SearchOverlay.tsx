@@ -162,7 +162,9 @@ export default function SearchOverlay({ isOpen, onClose, initialQuery = "" }: Pr
                   {results.map(p => (
                     <li key={p.id} className={styles.item}>
                       <Link to={`/product/${p.slug}`} className={styles.itemLink} onClick={onClose}>
-                        <div className={styles.thumb} />
+                        <div className={styles.thumb}>
+                          <img src={p.imageUrl} alt={p.title} />
+                        </div>
                         <div className={styles.meta}>
                           <div className={styles.titleRow}>
                             <span className={styles.title}>{p.title}</span>

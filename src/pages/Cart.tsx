@@ -15,7 +15,9 @@ export default function Cart() {
           {items.map(i => (
             <div className={styles.row} key={i.id}>
               <div className={styles.cellTitle}>
-                <div className={styles.thumb} />
+                <div className={styles.thumb}>
+                  <img src={i.imageUrl} alt={i.title} />
+                </div>
                 <div>
                   <div className={styles.title}>{i.title}</div>
                   <Link to={`/product/${i.slug}`} className={styles.link}>Подробнее</Link>
