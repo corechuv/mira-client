@@ -32,7 +32,7 @@
 }
 
 .gradientLeft, .gradientRight {
-  position: absolute; top: 0; bottom: 0; width: 40px; pointer-events: none;
+  position: absolute; top: 0; bottom: 0; width: 20px; pointer-events: none;
   z-index: 1;
 }
 .gradientLeft { left: 0; background: linear-gradient(90deg, var(--bg), transparent); }
