@@ -6,6 +6,7 @@ import { useState } from "react";
 // важно: нужны компоненты Modal и CategoryDrawer
 import Modal from "./Modal";
 import CategoryDrawer from "./CategoryDrawer";
+import Icon from "./Icon";
 
 export default function Header() {
   const { totalQty } = useCart();
@@ -20,22 +21,24 @@ export default function Header() {
           </Link>
 
           <nav className={styles.nav}>
-            <Link to="/catalog" className={styles.navItem}>Каталог</Link>
-            <Link to="/profile?tab=orders" className={styles.navItem}>Заказы</Link>
-            <Link to="/profile" className={styles.navItem}>Профиль</Link>
+            <Link to="/profile?tab=orders" className={styles.navItem}>
+              <Icon name="orders" size="1.8rem" />
+            </Link>
+            <Link to="/profile" className={styles.navItem}>
+              <Icon name="profile" size="1.8rem" />
+            </Link>
             <Link to="/cart" className={`${styles.navItem} ${styles.cart}`}>
-              <span>Корзина</span>
+              <Icon name="bag" size="1.8rem" />
               {totalQty > 0 && <span className="badge">{totalQty}</span>}
             </Link>
+            <div
+              className={styles.btnIcon}
+              onClick={() => setDrawerOpen(true)}
+              aria-label="Категории"
+            >
+              <Icon name="menu" size="1.8rem" />
+            </div>
           </nav>
-
-          <button
-            className="btn btnGhost"
-            onClick={() => setDrawerOpen(true)}
-            aria-label="Категории"
-          >
-            ☰
-          </button>
         </div>
       </div>
 

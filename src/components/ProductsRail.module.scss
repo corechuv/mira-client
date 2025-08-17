@@ -37,3 +37,14 @@
 }
 .gradientLeft { left: 0; background: linear-gradient(90deg, var(--bg), transparent); }
 .gradientRight { right: 0; background: linear-gradient(270deg, var(--bg), transparent); }
+
+.btnIcon {
+  display: inline-flex; justify-content: center; align-items: center;
+  width: 2.4rem; height: 2.4rem;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  border: none;
+  transition: background .15s ease;
+  border-radius: 0;
+}

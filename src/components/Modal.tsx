@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { createPortal } from "react-dom";
 import styles from "./Modal.module.scss";
+import Icon from "./Icon";
 
 type Side = "right" | "left" | "bottom";
 
@@ -63,7 +64,9 @@ export default function Modal({
       >
         <div className={styles.head}>
           <div className={styles.title}>{title}</div>
-          <button className="btn" onClick={onClose} aria-label="Закрыть">×</button>
+          <div className={styles.btnIcon} onClick={onClose} aria-label="Закрыть">
+            <Icon name="close" size="1.8rem" />
+          </div>
         </div>
         <div className={styles.body}>{children}</div>
       </aside>

@@ -11,7 +11,7 @@ export default function Home() {
   return (
     <div className="container">
       <section className={styles.hero}>
-        <div className={`card ${styles.heroCard}`}>
+        <div className={`${styles.heroCard}`}>
           <div className={styles.heroGrid}>
             <div className={styles.heroContent}>
               <span className={styles.badge}>новинки</span>
@@ -32,15 +32,8 @@ export default function Home() {
       <section className={styles.section}>
         <div className={styles.sectionHead}>
           <h2>Популярное</h2>
-          <Link to="/catalog" className="btn btnGhost">Весь каталог</Link>
         </div>
-        <div className="row">
-          {top.map(p => (
-            <div key={p.id} style={{ gridColumn: "span 3" }}>
-              <ProductCard product={p} />
-            </div>
-          ))}
-        </div>
+        <ProductsRail items={top} />
       </section>
 
       <section className={styles.section}>

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./ProductsRail.module.scss";
 import { Product } from "@/data/products";
 import ProductCard from "@/components/ProductCard";
+import Icon from "./Icon";
 
 type Props = {
   title?: string;
@@ -63,8 +64,12 @@ export default function ProductsRail({ title, items, excludeId, showControls = t
           <h3>{title}</h3>
           {showControls && (
             <div className={styles.controls}>
-              <button className="btn" onClick={() => scrollBy(-1)} disabled={!canL} aria-label="Назад">←</button>
-              <button className="btn" onClick={() => scrollBy(1)} disabled={!canR} aria-label="Вперёд">→</button>
+              <button className={styles.btnIcon} onClick={() => scrollBy(-1)} disabled={!canL} aria-label="Назад">
+                <Icon name="arrow-left" size="1.8rem" />
+              </button>
+              <button className={styles.btnIcon} onClick={() => scrollBy(1)} disabled={!canR} aria-label="Вперёд">
+                <Icon name="arrow-right" size="1.8rem" />
+              </button>
             </div>
           )}
         </div>

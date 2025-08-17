@@ -30,7 +30,7 @@
 }
 
 .nav {
-  display: none;           /* скрыто на мобилке */
+  display: flex;           /* скрыто на мобилке */
   align-items: center;
   gap: 1rem;
 }
@@ -52,7 +52,12 @@
   gap: .6rem;
 }
 
-/* показываем десктопную навигацию только на >800px */
-@media (min-width: 801px) {
-  .nav { display: flex; }
+.btnIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  transition: background .2s ease;
+  cursor: pointer;
 }

@@ -7,7 +7,7 @@ import { fmtEUR } from "@/utils/money";   // ← добавили
 export default function ProductCard({ product }: { product: Product }) {
   const { add } = useCart();
   return (
-    <div className={`card ${styles.card}`}>
+    <div className={`${styles.card}`}>
       <Link to={`/product/${product.slug}`} className={styles.thumb} aria-label={product.title}>
         <div className={styles.img} role="img" aria-label={product.title} />
       </Link>

@@ -7,6 +7,7 @@
   padding: 2rem;
   position: relative;
   overflow: hidden;
+  border-radius: 18px;
   background:
     radial-gradient(600px 300px at 110% -20%, rgba(255,46,138,0.35), transparent),
     linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
@@ -49,4 +50,20 @@
 .section { padding: 1rem 0 2rem; }
 .sectionHead {
   display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;
+}
+
+@media screen and (max-width: 900px) {
+  .hero {
+    padding: 1.2rem 0;
+  }
+  .heroCard {
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+  }
+  .heroCard::after {
+    display: none;
+  }
+  
 }
