@@ -27,32 +27,39 @@ const fmtEUR = (n: number) =>
   n.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
 
 export default function SearchOverlay({ isOpen, onClose, initialQuery = "" }: Props) {
-  // не рендерим вообще, если закрыто
+  // не монтируем в DOM, если закрыт
   if (!isOpen) return null;
 
   const { setSearch, setFilterPath } = useProducts();
   const [q, setQ] = useState(initialQuery);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
-  // автофокус
+  // автофокус и установка стартового значения
   useEffect(() => {
     setQ(initialQuery || "");
     const id = requestAnimationFrame(() => inputRef.current?.focus());
     return () => cancelAnimationFrame(id);
   }, [initialQuery]);
 
-  // ESC
+  // ESC для закрытия
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  // блок скролла
+  // блок скролла (надёжно: html + body) и корректный откат
   useEffect(() => {
-    const prev = document.documentElement.style.overflow;
-    document.documentElement.style.overflow = "hidden";
-    return () => { document.documentElement.style.overflow = prev; };
+    const html = document.documentElement;
+    const body = document.body;
+    const prevHtmlOverflow = html.style.overflow;
+    const prevBodyOverflow = body.style.overflow;
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    return () => {
+      html.style.overflow = prevHtmlOverflow || "";
+      body.style.overflow = prevBodyOverflow || "";
+    };
   }, []);
 
   const results = useMemo(() => {
@@ -69,8 +76,8 @@ export default function SearchOverlay({ isOpen, onClose, initialQuery = "" }: Pr
   }, [q]);
 
   const openAll = () => {
-    setFilterPath([]); // не фиксируем путь
-    setSearch(q);      // передаём запрос
+    setFilterPath([]); // сбрасываем путь
+    setSearch(q);      // прокидываем поисковый текст
     onClose();
     navigate("/catalog");
   };
@@ -79,29 +86,36 @@ export default function SearchOverlay({ isOpen, onClose, initialQuery = "" }: Pr
     <div className={styles.root} role="dialog" aria-modal="true" aria-label="Поиск по каталогу">
       <div className={styles.backdrop} onClick={onClose} />
 
-      {/* Вся сцена: две строки — hero 400px + результаты 1fr */}
+      {/* сцена: хиро (адаптивная высота) + скроллируемые результаты */}
       <div className={styles.stage}>
-        {/* HERO — ровно 400px на всю ширину, контент внутри ограничен 1024 */}
+        {/* HERO */}
         <section className={styles.hero}>
           <div className={styles.inner}>
             <form className={styles.searchForm} onSubmit={(e) => { e.preventDefault(); openAll(); }}>
-              <input
-                ref={inputRef}
-                className={styles.searchInput + " input"}
-                placeholder="Поиск по товарам…"
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                aria-label="Поиск"
-              />
-              {q && (
-                <button type="button" className="btn" onClick={() => setQ("")} aria-label="Очистить">
-                  Очистить
-                </button>
-              )}
+              <div className={styles.searchBox}>
+                <input
+                  ref={inputRef}
+                  className={styles.searchInput + " input"}
+                  placeholder="Поиск по товарам…"
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  aria-label="Поиск"
+                />
+                {!!q && (
+                  <div
+                    className={styles.clearBtn}
+                    onClick={() => setQ("")}
+                    aria-label="Очистить"
+                  >
+                    <Icon name="close" size="1.1rem" />
+                  </div>
+                )}
+              </div>
+
               <button type="submit" className="btn btnPrimary">Все результаты</button>
             </form>
 
-            {/* тренды — как подсказки */}
+            {/* подсказки */}
             <div className={styles.trends}>
               <span className={styles.trendLabel}>Популярное:</span>
               {["Наушники", "Кроссовки", "Лампа", "Куртка"].map(t => (
@@ -117,7 +131,7 @@ export default function SearchOverlay({ isOpen, onClose, initialQuery = "" }: Pr
             </div>
           </div>
 
-          {/* Крестик в хиро */}
+          {/* Кнопка закрытия — не перекрывает инпут */}
           <div
             className={styles.closeBtn + ""}
             onClick={onClose}
@@ -127,12 +141,12 @@ export default function SearchOverlay({ isOpen, onClose, initialQuery = "" }: Pr
           </div>
         </section>
 
-        {/* РЕЗУЛЬТАТЫ — прокручиваются, контент ≤1024 */}
+        {/* РЕЗУЛЬТАТЫ */}
         <section className={styles.results}>
           <div className={styles.inner}>
             {!q && (
               <div className={styles.hint}>
-                Введите запрос: название, категорию или часть описания.
+                Введите запрос: название товара, категорию или часть описания.
               </div>
             )}
 
