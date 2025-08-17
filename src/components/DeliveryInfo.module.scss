@@ -12,8 +12,8 @@
 .qtyLabel { font-size: .9rem; }
 .qtyCtrl { display: inline-flex; align-items: center; gap: .4rem; }
 .qtyInput {
-  width: 48px; text-align: center;
-  padding: .35rem .2rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12);
+  width: 48px; text-align: center; font-size: 16px; min-height: 46px;
+  padding: .6rem .2rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12);
   background: var(--surface); color: var(--text);
 }
 

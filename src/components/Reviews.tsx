@@ -210,7 +210,6 @@ export default function Reviews({ productId }: Props) {
           required
         />
         <textarea
-          className="input"
           placeholder="Ваш отзыв"
           rows={4}
           value={text}
