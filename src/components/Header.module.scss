@@ -2,9 +2,9 @@
   position: sticky;
   top: 0;
   z-index: 20;
-  background: linear-gradient(180deg, rgba(10, 10, 10, 0.9), rgba(10, 10, 10, 0.6));
+  background: linear-gradient(180deg, rgba(10,10,10,.9), rgba(10,10,10,.6));
   backdrop-filter: blur(8px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255,255,255,.06);
 }
 
 .bar {
@@ -16,67 +16,63 @@
 }
 
 .logo {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: .6rem;
-  font-weight: 700;
-  letter-spacing: .3px;
+  text-decoration: none;
+  color: var(--text);
 }
-
-.logoImage {
-  width: 32px;
-  height: 32px;
-  object-fit: cover;
-}
+.logoImage { width: 32px; height: 32px; object-fit: cover; }
+.logoText { font-weight: 800; letter-spacing: .2px; }
 
 .nav {
-  display: flex;
-  /* скрыто на мобилке */
+  display: inline-flex;
   align-items: center;
-  gap: 2rem;
+  gap: 1rem;
 }
 
 .navItem {
   position: relative;
-  display: flex;
-  padding: .6rem 0;
-  transition: background .2s ease, color .2s ease;
-}
-
-.cart {
-  display: inline-flex;
-  align-items: center;
-  gap: .6rem;
-}
-
-.btnIcon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  transition: background .2s ease;
+  padding: .4rem;
+  border-radius: 10px;
+  text-decoration: none;
+  color: var(--text);
+}
+
+.btnIcon {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem; height: 2.5rem;
   cursor: pointer;
 }
+
+.cart { gap: .4rem; }
 
 .countBadge {
   position: absolute;
   top: -4px;
-  right: -12px;
+  right: -6px;
+  min-width: 1.35rem;
+  height: 1.35rem;
+  padding: 0 .35rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.6rem;
-  height: 1.6rem;
-  font-size: .8rem;
-  border-radius: 50%;
-
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.8rem;
-  padding: 0.35rem 0.6rem;
+  font-size: .75rem;
   border-radius: 999px;
-  background: rgba(255, 46, 138, 0.1);
-  color: var(--text);
+  background: rgba(255,46,138,.18);
+  color: #fff;
+}
+
+/* адаптив */
+@media (max-width: 640px) {
+  .logoText { display: none; }
 }
