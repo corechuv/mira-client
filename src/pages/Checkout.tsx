@@ -280,7 +280,7 @@ export default function Checkout() {
 
           <h3 className={styles.sectionTitle}>Доставка (Deutschland, DHL)</h3>
 
-          <div className={styles.shipOptions + " card"}>
+          <div className={styles.shipOptions + ""}>
             <label className={styles.shipRow}>
               <input type="radio" name="ship" checked={shipMethod === "dhl"} onChange={() => setShipMethod("dhl")} />
               <div className={styles.shipBody}>
@@ -367,7 +367,7 @@ export default function Checkout() {
                     </select>
                   </Field>
                   {selectedAddr ? (
-                    <div className={styles.addrPreview + " card"}>
+                    <div className={styles.addrPreview + ""}>
                       <div className={styles.previewRow}>
                         <div className={styles.previewCol}>
                           <div className={styles.previewName}>
@@ -450,7 +450,7 @@ export default function Checkout() {
                   )}
 
                   <Field label="Комментарий для курьера (необязательно)">
-                    <textarea className="input" rows={3} value={extra} onChange={(e) => setExtra(e.target.value)} placeholder="Звонить перед доставкой, оставить у соседа и т.п." />
+                    <textarea rows={3} value={extra} onChange={(e) => setExtra(e.target.value)} placeholder="Звонить перед доставкой, оставить у соседа и т.п." />
                   </Field>
 
                   <div className={styles.saveAddressRow}>
