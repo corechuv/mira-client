@@ -5,28 +5,49 @@
   padding: 1rem;
 }
 
-.list { display: grid; gap: .6rem; }
+.list {
+  display: grid;
+  gap: .6rem;
+}
+
 .row {
   display: grid;
   grid-template-columns: 1.2fr 120px 1fr 120px;
   gap: .6rem;
   align-items: center;
-  background: var(--surface-2);
-  border: 1px solid rgba(255,255,255,0.06);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 12px;
   padding: .6rem;
   position: relative;
 }
-.cell { text-align: right; }
-.cellTitle {
-  display: grid; grid-template-columns: 72px 1fr; gap: .6rem; align-items: center;
+
+.cell {
+  text-align: right;
 }
-.title { font-weight: 600; }
-.link { color: var(--muted); font-size: .9rem; }
+
+.cellTitle {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: .6rem;
+  align-items: center;
+}
+
+.title {
+  font-weight: 600;
+}
+
+.link {
+  color: var(--muted);
+  font-size: .9rem;
+}
+
 .thumb {
-  width: 72px; height: 72px; border-radius: 10px;
+  width: 72px;
+  height: 72px;
+  border-radius: 10px;
   background: transparent;
-  border: 1px solid rgba(255,255,255,0.06);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 
   img {
     width: 100%;
@@ -41,27 +62,49 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px; height: 32px;
+  width: 32px;
+  height: 32px;
   cursor: pointer;
   position: absolute;
-  top: 10px; right: 5px;
+  top: 10px;
+  right: 5px;
 }
 
 .aside {
   padding: 1rem;
   align-self: start;
 }
+
 .totalRow {
-  display: flex; align-items: center; justify-content: space-between; margin-bottom: .8rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: .8rem;
 }
 
-.empty { color: var(--muted); padding: .8rem; }
+.empty {
+  color: var(--muted);
+  padding: .8rem;
+}
 
 @media (max-width: 1000px) {
-  .aside { padding: 1rem 0; }
-  .wrap { grid-template-columns: 1fr; padding: 0; }
+  .aside {
+    padding: 1rem 0;
+  }
+
+  .wrap {
+    grid-template-columns: 1fr;
+    padding: 0;
+  }
 }
+
 @media (max-width: 700px) {
-  .row { grid-template-columns: 1fr auto; padding-right: 50px; }
-  .cell { text-align: left; }
+  .row {
+    grid-template-columns: 1fr auto;
+    padding-right: 50px;
+  }
+
+  .cell {
+    text-align: left;
+  }
 }
