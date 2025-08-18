@@ -185,7 +185,7 @@ export default function Profile() {
       </div>
 
       {tab === "profile" && (
-        <form className={`card ${styles.form}`} onSubmit={saveProfile}>
+        <form className={`${styles.form}`} onSubmit={saveProfile}>
           <div className={styles.twoCols}>
             <label className={styles.field}>
               <span>Имя</span>
@@ -215,7 +215,7 @@ export default function Profile() {
           ) : (
             <div className={styles.addrList}>
               {addresses.map(a => (
-                <article key={a.id} className={`card ${styles.addrCard}`}>
+                <article key={a.id} className={`${styles.addrCard}`}>
                   <div className={styles.addrTop}>
                     <div className={styles.addrLines}>
                       {addrToLines(a).map((ln, i) => <div key={i}>{ln}</div>)}

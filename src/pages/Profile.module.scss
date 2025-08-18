@@ -8,7 +8,8 @@
 .spacer { flex: 1; }
 
 /* Forms common */
-.form { padding: 1rem; display: grid; gap: .8rem; }
+.form { padding: 1rem; display: grid; gap: .8rem; background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+    border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 18px; }
 .twoCols { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; }
 .field { display: grid; gap: .3rem; }
 .field span { color: var(--muted); font-size: .95rem; }
@@ -18,7 +19,9 @@
 .addrWrap { display: grid; gap: .8rem; }
 .addrHead { display: flex; align-items: center; justify-content: space-between; }
 .addrList { display: grid; gap: .8rem; }
-.addrCard { padding: .8rem; }
+.addrCard { padding: .8rem; background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 18px; }
 .addrTop { display: flex; align-items: flex-start; justify-content: space-between; gap: .8rem; }
 .addrLines { display: grid; gap: .2rem; }
 .addrBadges { display: flex; gap: .4rem; }
@@ -40,7 +43,7 @@
 .orderHead { display: flex; align-items: center; justify-content: space-between; gap: .6rem; }
 .orderBadges { display: flex; gap: .4rem; flex-wrap: wrap; }
 
-.items { display: grid; gap: .6rem; }
+.items { display: grid; gap: 1rem; }
 .itemRow { display: grid; grid-template-columns: 1fr auto auto; gap: .6rem; align-items: center; }
 .itemLeft { display: flex; gap: .6rem; align-items: center; }
 .thumb {
@@ -65,7 +68,8 @@
 
 /* Adaptive */
 @media (max-width: 900px) {
+  .orderCard { padding: .8rem 0; }
   .twoCols { grid-template-columns: 1fr; }
   .itemRow { grid-template-columns: 1fr auto; }
-  .itemSum { grid-column: 2 / 3; }
+  .itemSum { grid-column: 2 / 3;  margin-top: 10px }
 }
