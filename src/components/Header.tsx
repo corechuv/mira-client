@@ -38,7 +38,7 @@ export default function Header() {
             <Link to="/profile?tab=orders" className={styles.navItem} aria-label="Мои заказы">
               <Icon name="orders" size="1.8rem" />
             </Link>
-            
+
             <Link to="/cart" className={`${styles.navItem} ${styles.cart}`} aria-label="Корзина">
               <Icon name="bag" size="1.8rem" />
               {totalQty > 0 && <span className={styles.countBadge}>{totalQty}</span>}
@@ -67,10 +67,9 @@ export default function Header() {
       </Modal>
 
       {/* Полноэкранный поиск */}
-      <SearchOverlay
-        isOpen={searchOpen}
-        onClose={() => setSearchOpen(false)}
-      />
+      {searchOpen && (
+        <SearchOverlay isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
+      )}
     </header>
   );
 }

@@ -118,7 +118,7 @@ export default function SearchOverlay({ isOpen, onClose, initialQuery = "" }: Pr
             {/* подсказки */}
             <div className={styles.trends}>
               <span className={styles.trendLabel}>Популярное:</span>
-              {["Наушники", "Кроссовки", "Лампа", "Куртка"].map(t => (
+              {["Витамины", "Omega-3", "Уход", "Gels"].map(t => (
                 <button
                   key={t}
                   type="button"
