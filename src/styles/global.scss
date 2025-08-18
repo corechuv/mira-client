@@ -130,8 +130,10 @@ button {
 }
 
 .btnPrimary {
-  background: linear-gradient(180deg, var(--pink), var(--pink-700));
-  color: white;
+  /*background: linear-gradient(180deg, var(--pink), var(--pink-700));*/
+  /*color: white;*/
+  background: pink;
+  color: #141414;
 }
 
 .btn100 {
