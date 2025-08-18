@@ -17,7 +17,7 @@ export default function Home() {
               <span className={styles.badge}>новинки</span>
               <h1 className={styles.title}>Шото написать...</h1>
               <p className={styles.subtitle}>
-                Шо то дописать
+                Шо то дописать...
               </p>
               <div className={styles.actions}>
                 <Link to="/catalog" className="btn btnPrimary">В каталог</Link>

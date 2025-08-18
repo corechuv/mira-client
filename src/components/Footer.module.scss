@@ -91,7 +91,6 @@
   color: var(--muted);
   font-size: .9rem;
   display: flex;
-  justify-content: center;
 }
 
 /* адаптация */
@@ -125,7 +124,5 @@
 
 @media (max-width: 900px) {
   .bottom { flex-direction: column; gap: 1.2rem; }
-  .corp { justify-content: center; }
-  .bottom ul { justify-content: center; }
   .bottom ul { flex-wrap: wrap; gap: 1rem; }
 }
