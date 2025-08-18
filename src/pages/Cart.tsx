@@ -2,6 +2,7 @@ import { useCart } from "@/contexts/CartContext";
 import styles from "./Cart.module.scss";
 import { Link } from "@/router/Router";
 import { fmtEUR } from "@/utils/money";
+import Icon from "@/components/Icon";
 
 export default function Cart() {
   const { items, setQty, remove, total } = useCart();
@@ -35,7 +36,9 @@ export default function Cart() {
               </div>
               <div className={styles.cell}>{fmtEUR(i.price * i.qty)}</div>
               <div className={styles.cell}>
-                <button className="btn" onClick={() => remove(i.id)}>Удалить</button>
+                <div className={styles.btnIcon} onClick={() => remove(i.id)}>
+                  <Icon name="close" width={20} />
+                </div>
               </div>
             </div>
           ))}
