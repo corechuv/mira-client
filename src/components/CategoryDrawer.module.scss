@@ -1,9 +1,18 @@
-.wrap { display: grid; gap: .6rem; }
+.wrap {
+  display: grid;
+  gap: .6rem;
+}
+
 .toolbar {
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: .2rem .2rem .4rem;
 }
-.breadcrumbs { color: var(--muted); }
+
+.breadcrumbs {
+  color: var(--muted);
+}
 
 .viewport {
   position: relative;
@@ -37,4 +46,17 @@
   color: var(--text);
   cursor: pointer;
 }
-.chev { opacity: .7; float: right; }
+
+.chev {
+  opacity: .7;
+  float: right;
+}
+
+.btnIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+}

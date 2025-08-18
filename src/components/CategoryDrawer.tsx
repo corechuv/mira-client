@@ -3,6 +3,7 @@ import { useState } from "react";
 import { categories, CategoryNode } from "@/data/categories";
 import { navigate } from "@/router/Router";
 import { useProducts } from "@/contexts/ProductsContext";
+import Icon from "./Icon";
 
 type Props = { onClose: () => void };
 
@@ -35,9 +36,12 @@ export default function CategoryDrawer({ onClose }: Props) {
         <div className={styles.wrap}>
             <div className={styles.toolbar}>
                 {level > 0 ? (
-                    <button className="btn" onClick={back}>← Назад</button>
+                    <div className={styles.btnIcon} onClick={back}>
+                        <Icon name="arrow-left" width={20} />
+                    </div>
                 ) : (
-                    <button className="btn" onClick={reset}>Сброс</button>
+                    <div className={styles.btnIcon} onClick={back}>
+                    </div>
                 )}
                 <div className={styles.breadcrumbs}>
                     {level === 0 ? "Категории" : trail.map((n) => n.title).join(" / ")}
