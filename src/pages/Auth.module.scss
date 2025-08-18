@@ -14,7 +14,7 @@
 
 .card {
     width: min(420px, 100%);
-    background: var(--surface);
+    background: transparent;
     border-radius: 16px;
     padding: clamp(1rem, 4vw, 1.4rem);
     display: grid;
