@@ -40,7 +40,6 @@ export default function Catalog() {
       <div className={styles.topbar}>
         <button className="btn btnGhost" onClick={()=>setOpenSheet(true)}>Фильтры</button>
         <div className={styles.topbarRight}>
-          <span className={styles.counter}>Найдено: <b>{products.length}</b></span>
           <label className={styles.sortInline}>
             <select
               className="input"
@@ -54,6 +53,7 @@ export default function Catalog() {
           </label>
         </div>
       </div>
+      <span className={styles.counter}>Найдено: <b>{products.length}</b></span>
 
       <div className={styles.layout}>
         {/* Сайдбар (desktop) */}

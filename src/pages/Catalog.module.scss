@@ -5,7 +5,7 @@
 .topbarRight { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; }
 .sortInline { display: inline-flex; gap: .45rem; align-items: center; }
 .sortInline > span { color: var(--muted); }
-.counter { color: var(--muted); }
+.counter { color: var(--muted); margin-bottom: 20px; display: block; }
 
 .layout {
   display: grid;

@@ -10,21 +10,20 @@ type IconItem = {
 };
 
 const payments: IconItem[] = [
-  { src: "/icons/visa.svg",        alt: "Visa",        h: 18 },
-  { src: "/icons/mastercard.svg",  alt: "Mastercard",  h: 34 },
-  { src: "/icons/paypal.svg",      alt: "PayPal",      h: 22, hSm: 20 },
+  { src: "/icons/visa.svg", alt: "Visa", h: 18 },
+  { src: "/icons/mastercard.svg", alt: "Mastercard", h: 34 },
 ];
 
 const shipping: IconItem[] = [
-  { src: "/icons/dhl.svg",         alt: "DHL",         h: 12, hSm: 12 },
+  { src: "/icons/dhl.svg", alt: "DHL", h: 12, hSm: 12 },
 ];
 
 const socials: IconItem[] = [
-  { src: "/icons/meta.svg",        alt: "Meta",       href: "#", h: 34 },
-  { src: "/icons/instagram.svg",   alt: "Instagram",  href: "#", h: 18 },
-  { src: "/icons/x.svg",           alt: "X",          href: "#", h: 16 },
-  { src: "/icons/tiktok.svg",      alt: "TikTok",     href: "#", h: 34 },
-  { src: "/icons/youtube.svg",     alt: "YouTube",    href: "#", h: 30 },
+  { src: "/icons/meta.svg", alt: "Meta", href: "#", h: 34 },
+  { src: "/icons/instagram.svg", alt: "Instagram", href: "#", h: 18 },
+  { src: "/icons/x.svg", alt: "X", href: "#", h: 16 },
+  { src: "/icons/tiktok.svg", alt: "TikTok", href: "#", h: 34 },
+  { src: "/icons/youtube.svg", alt: "YouTube", href: "#", h: 30 },
 ];
 
 // svg→png fallback
@@ -132,7 +131,22 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className={styles.copy}>© {new Date().getFullYear()} Mira</div>
+        <div className={styles.bottom}>
+          <div className={styles.legal}>
+            <ul>
+              <li>
+                <Link to="/privacy">Политика конфиденциальности</Link>
+              </li>
+              <li>
+                <Link to="/terms">Условия использования</Link>
+              </li>
+              <li>
+                <Link to="/cookies">Политика использования cookies</Link>
+              </li>
+            </ul>
+          </div>
+          <div className={styles.copy}>© {new Date().getFullYear()} Mira</div>
+        </div>
       </div>
     </footer>
   );
