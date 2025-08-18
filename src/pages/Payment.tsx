@@ -49,9 +49,6 @@ export default function Payment() {
       <h1>Оплата картой</h1>
       <div className={styles.grid}>
         <form className={`card ${styles.form}`} onSubmit={pay}>
-          <div className={styles.testNote}>
-            Тестовый режим — реальная оплата не выполняется. В будущем: Stripe.
-          </div>
 
           <Field label="Держатель карты">
             <input className="input" value={holder} onChange={(e) => setHolder(e.target.value)} placeholder="IVAN IVANOV" required />

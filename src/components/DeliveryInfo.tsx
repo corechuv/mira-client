@@ -151,7 +151,7 @@ export default function DeliveryInfo({ productPrice }: { productPrice: number })
           <div>
             <div className={styles.infoTitle}>Оплата</div>
             <div className={styles.infoText}>
-              Банковские карты, Apple&nbsp;Pay/Google&nbsp;Pay. <span className={styles.muted}>Скоро — Stripe.</span>
+              Visa, Mastercard.
             </div>
           </div>
         </li>
