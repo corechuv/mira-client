@@ -14,10 +14,7 @@
   display: grid;
   gap: .4rem;
   justify-items: start;
-  padding: 1rem;
-  background: var(--surface);
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 14px;
+  padding-bottom: 30px;
 }
 .avg { font-size: 4.9rem; font-weight: 800; }
 .total { color: var(--muted); font-size: .9rem; }
