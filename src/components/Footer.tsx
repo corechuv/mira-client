@@ -44,10 +44,8 @@ export default function Footer() {
         <div className={styles.grid}>
           <div>
             <div className={styles.brand}>
-              <span className={styles.logoDot} />
-              Mira
+              <img src="/logo.png" alt="Mira" />
             </div>
-            <p className={styles.muted}>Шото нописать </p>
           </div>
 
           <nav className={styles.links} aria-label="Ссылки">
@@ -100,35 +98,6 @@ export default function Footer() {
               ))}
             </ul>
           </div>
-
-          <div className={styles.iconGroup} aria-label="Соцсети">
-            <span className={styles.groupTitle}>Мы в сетях</span>
-            <ul className={styles.icons}>
-              {socials.map((i) => (
-                <li key={i.alt} className={styles.iconItem}>
-                  <a
-                    href={i.href || "#"}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={i.alt}
-                    className={styles.iconLink}
-                  >
-                    <img
-                      src={i.src}
-                      alt=""
-                      onError={onImgError}
-                      style={
-                        {
-                          ["--h" as any]: toPx(i.h),
-                          ["--h-sm" as any]: toPx(i.hSm),
-                        } as React.CSSProperties
-                      }
-                    />
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
         </div>
 
         <div className={styles.bottom}>
@@ -146,6 +115,34 @@ export default function Footer() {
             </ul>
           </div>
           <div className={styles.copy}>© {new Date().getFullYear()} Mira</div>
+        </div>
+
+        <div className={styles.iconGroup} style={{ display: "flex", marginTop: 30, marginLeft: "-18px", justifyContent: "start" }} aria-label="Соцсети">
+          <ul className={styles.icons}>
+            {socials.map((i) => (
+              <li key={i.alt} className={styles.iconItem}>
+                <a
+                  href={i.href || "#"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={i.alt}
+                  className={styles.iconLink}
+                >
+                  <img
+                    src={i.src}
+                    alt=""
+                    onError={onImgError}
+                    style={
+                      {
+                        ["--h" as any]: toPx(i.h),
+                        ["--h-sm" as any]: toPx(i.hSm),
+                      } as React.CSSProperties
+                    }
+                  />
+                </a>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </footer>

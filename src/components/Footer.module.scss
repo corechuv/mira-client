@@ -15,6 +15,12 @@
   align-items: center;
   gap: .6rem;
   font-weight: 700;
+
+  img {
+    height: 36px;
+    width: auto;
+    display: block;
+  }
 }
 .logoDot {
   width: 12px;
