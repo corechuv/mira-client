@@ -32,10 +32,10 @@
 
 .link:hover,
 .linkButton:hover {
-  color: #fff;
+  color: var(--text);
   border-color: rgba(255,255,255,0.12);
   background: rgba(255,46,138,0.08);
 }
 
-.current { color: #fff; font-weight: 600; }
+.current { color: var(--text); font-weight: 600; }
 .sep { opacity: .6; }

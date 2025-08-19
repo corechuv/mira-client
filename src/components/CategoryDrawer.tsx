@@ -5,6 +5,7 @@ import { categories, CategoryNode } from "@/data/categories";
 import { navigate } from "@/router/Router";
 import { useProducts } from "@/contexts/ProductsContext";
 import Icon from "./Icon";
+import ThemeToggle from "./ThemeToggle";
 
 type Props = { onClose: () => void };
 
@@ -92,6 +93,8 @@ export default function CategoryDrawer({ onClose }: Props) {
 
                 </div>
             </div>
+            {/* переключатель темы */}
+            <ThemeToggle />
         </div>
     );
 }

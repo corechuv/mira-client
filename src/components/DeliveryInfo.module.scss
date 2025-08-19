@@ -14,7 +14,7 @@
 .qtyCtrl { display: inline-flex; align-items: center; gap: .4rem; }
 .qtyInput {
   width: 48px; text-align: center; font-size: 16px; min-height: 46px;
-  padding: .6rem .2rem; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12);
+  padding: .6rem .2rem; border-radius: 10px; border: 1px solid  var(--border-weak);
   background: var(--surface); color: var(--text);
 }
 
@@ -28,7 +28,7 @@
   gap: .6rem;
   align-items: center;
   padding: .5rem 0;
-  border-bottom: 1px dashed rgba(255,255,255,0.12);
+  border-bottom: 1px dashed var(--border-weak);
 }
 .row:last-child { border-bottom: 0; }
 
@@ -60,7 +60,7 @@
   gap: .6rem;
   align-items: start;
   padding: .8rem 0;
-  border-bottom: 1px dashed rgba(255,255,255,0.12);
+  border-bottom: 1px dashed var(--border-weak);
 }
 .infoList li:last-child { border-bottom: 0; }
 .icon { color: var(--pink); margin-top: .15rem; }
