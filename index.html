@@ -3,8 +3,27 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0a0a0a" />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#0a0a0a" id="theme-color" />
     <title>Mira</title>
+    <script>
+      (function () {
+        var KEY = "pm.theme";
+        var DARK = "#0a0a0a";
+        var LIGHT = "#ffffff";
+        try {
+          var t = localStorage.getItem(KEY);
+          if (t !== "light" && t !== "dark") {
+            t = window.matchMedia &&
+                window.matchMedia("(prefers-color-scheme: light)").matches
+                ? "light" : "dark";
+          }
+          document.documentElement.setAttribute("data-theme", t);
+          var meta = document.getElementById("theme-color");
+          if (meta) meta.setAttribute("content", t === "light" ? LIGHT : DARK);
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
