@@ -1,3 +1,4 @@
+// src/components/DeliveryInfo.tsx
 import styles from "./DeliveryInfo.module.scss";
 import { fmtEUR } from "@/utils/money";
 import { useCart } from "@/contexts/CartContext";

@@ -1,3 +1,4 @@
+// src/contexts/ProductsContext.tsx
 import React, { createContext, useContext, useMemo, useState } from "react";
 import { products as seed, Product } from "@/data/products";
 

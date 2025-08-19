@@ -1,3 +1,4 @@
+// src/pages/Profile.tsx
 import { useMemo, useState } from "react";
 import styles from "./Profile.module.scss";
 import { useAuth } from "@/contexts/AuthContext";
@@ -5,7 +6,33 @@ import { Link } from "@/router/Router";
 import { fmtEUR } from "@/utils/money";
 import { Address, loadAddresses, saveAddresses, emptyAddress } from "@/utils/addresses";
 
-type CartItem = { id: string; qty: number; title: string; price: number; slug: string; imageUrl: string };
+/* ===== Types ===== */
+type CartItem = {
+  id: string;
+  qty: number;
+  title: string;
+  price: number;
+  slug: string;
+  imageUrl: string;
+};
+
+type OrderStatus =
+  | "processing"         // оформлен, обрабатываем
+  | "packed"             // собираем
+  | "shipped"            // отправлен
+  | "delivered"          // доставлен
+  | "cancelled"          // отменён (до отгрузки)
+  | "refund_requested"   // возврат запрошен
+  | "refunded";          // возврат оформлен
+
+type RefundInfo = {
+  requestedAt: string;
+  reason?: string;
+  comment?: string;
+  approved?: boolean;
+  processedAt?: string;
+};
+
 type AnyOrder = {
   id: string;
   createdAt: string;
@@ -14,16 +41,25 @@ type AnyOrder = {
   totals?: { subtotal?: number; shipping?: number; grand: number };
   customer?: { email?: string };
   shipping?: { method?: string; packType?: string };
-  payment?: { status?: "paid"|"pending"|"failed"; last4?: string };
+  payment?: { status?: "paid" | "pending" | "failed"; last4?: string };
+
+  // новые поля
+  status?: OrderStatus;
+  refund?: RefundInfo;
 };
 
 const ORDERS_KEY = "pm.orders.v1";
 
-function loadOrders(): AnyOrder[] {
+/* ===== Storage helpers ===== */
+function loadOrdersRaw(): AnyOrder[] {
   try { return JSON.parse(localStorage.getItem(ORDERS_KEY) || "[]"); }
   catch { return []; }
 }
+function saveOrdersRaw(list: AnyOrder[]) {
+  localStorage.setItem(ORDERS_KEY, JSON.stringify(list));
+}
 
+/* ===== Utils ===== */
 function addrToLines(a: Address): string[] {
   const l1 = [a.firstName, a.lastName].filter(Boolean).join(" ");
   const l2 = a.packType
@@ -32,6 +68,32 @@ function addrToLines(a: Address): string[] {
   const l3 = [a.zip, a.city].filter(Boolean).join(" ");
   return [l1, l2, l3].filter(Boolean);
 }
+
+const statusLabel: Record<OrderStatus, string> = {
+  processing: "Обработка",
+  packed: "Собираем",
+  shipped: "Отправлен",
+  delivered: "Доставлен",
+  cancelled: "Отменён",
+  refund_requested: "Возврат запрошен",
+  refunded: "Возврат оформлен",
+};
+
+const BADGES: Partial<Record<OrderStatus, "info" | "warn" | "good" | "bad">> = {
+  processing: "info",
+  packed: "info",
+  shipped: "info",
+  delivered: "good",
+  cancelled: "bad",
+  refund_requested: "warn",
+  refunded: "good",
+};
+
+const nowMs = () => Date.now();
+const minsSince = (iso: string) => (nowMs() - +new Date(iso)) / 60000;
+const daysSince = (iso: string) => (nowMs() - +new Date(iso)) / 86400000;
+
+/* ===================================================================== */
 
 export default function Profile() {
   const auth = useAuth();
@@ -69,7 +131,7 @@ export default function Profile() {
     );
   }
 
-  /* ---- Профиль ---- */
+  /* --------------------- Профиль --------------------- */
   const [name, setName]   = useState(user.name || "");
   const [email, setEmail] = useState(user.email || "");
   const saveProfile = (e: React.FormEvent) => {
@@ -83,29 +145,16 @@ export default function Profile() {
     } catch {}
   };
 
-  /* ---- Адреса ---- */
+  /* --------------------- Адреса --------------------- */
   const [addresses, setAddresses] = useState<Address[]>(loadAddresses());
-
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState<boolean>(addresses.length === 0);
   const suggestFirst = user.name?.split(" ")[0] || "";
   const [draft, setDraft] = useState<Address>(emptyAddress(suggestFirst));
 
-  const startAdd = () => {
-    setEditingId(null);
-    setDraft(emptyAddress(suggestFirst));
-    setShowForm(true);
-  };
-  const startEdit = (a: Address) => {
-    setEditingId(a.id);
-    setDraft({ ...a });
-    setShowForm(true);
-  };
-  const cancelForm = () => {
-    setShowForm(false);
-    setEditingId(null);
-    setDraft(emptyAddress(suggestFirst));
-  };
+  const startAdd = () => { setEditingId(null); setDraft(emptyAddress(suggestFirst)); setShowForm(true); };
+  const startEdit = (a: Address) => { setEditingId(a.id); setDraft({ ...a }); setShowForm(true); };
+  const cancelForm = () => { setShowForm(false); setEditingId(null); setDraft(emptyAddress(suggestFirst)); };
 
   const submitAddress = (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,14 +178,11 @@ export default function Profile() {
       } else {
         const makeDefault = prev.length === 0 || d.isDefault;
         next = [...prev, { ...d, isDefault: makeDefault ? true : d.isDefault }];
-        if (makeDefault) {
-          next = next.map(x => x.id === d.id ? { ...x, isDefault: true } : { ...x, isDefault: false });
-        }
+        if (makeDefault) next = next.map(x => x.id === d.id ? { ...x, isDefault: true } : { ...x, isDefault: false });
       }
-      saveAddresses(next); // write-through
+      saveAddresses(next);
       return next;
     });
-
     cancelForm();
   };
 
@@ -144,14 +190,11 @@ export default function Profile() {
     if (!confirm("Удалить этот адрес?")) return;
     setAddresses(prev => {
       const next = prev.filter(x => x.id !== id);
-      if (!next.some(x => x.isDefault) && next.length > 0) {
-        next[0].isDefault = true;
-      }
+      if (!next.some(x => x.isDefault) && next.length > 0) next[0].isDefault = true;
       saveAddresses(next);
       return [...next];
     });
   };
-
   const setDefault = (id: string) => {
     setAddresses(prev => {
       const next = prev.map(x => ({ ...x, isDefault: x.id === id }));
@@ -160,17 +203,86 @@ export default function Profile() {
     });
   };
 
-  /* ---- Заказы ---- */
+  /* --------------------- Заказы --------------------- */
+  // дергаем версию при изменениях (отмена/возврат), чтобы пересчитать список
+  const [ordersVer, setOrdersVer] = useState(0);
+
   const orders = useMemo(() => {
-    const raw = loadOrders();
+    const raw = loadOrdersRaw();
     const mine = raw.filter(o => (o.customer?.email || "").toLowerCase() === (user.email || "").toLowerCase());
     return mine
       .map(o => {
         const total = o.total ?? o.totals?.grand ?? o.items.reduce((s,i)=>s+i.price*i.qty,0);
-        return { ...o, _total: total as number };
+        const status: OrderStatus = (o.status as OrderStatus) || "processing";
+        return { ...o, status, _total: total as number };
       })
       .sort((a,b)=> +new Date(b.createdAt) - +new Date(a.createdAt));
-  }, [user.email]);
+  }, [user.email, ordersVer]);
+
+  // helpers для статусов/действий
+  const canCancel = (o: AnyOrder & { _total: number }): boolean => {
+    const st = (o.status as OrderStatus) || "processing";
+    if (["cancelled", "shipped", "delivered", "refund_requested", "refunded"].includes(st)) return false;
+    const isPaid = o.payment?.status === "paid";
+    // Отменяем без возврата — только для неоплаченных
+    if (!isPaid) return true;
+    // Оплаченный — не отменяем (предлагаем возврат)
+    return false;
+  };
+
+  const canRequestReturn = (o: AnyOrder & { _total: number }): boolean => {
+    const st = (o.status as OrderStatus) || "processing";
+    if (["cancelled", "refund_requested", "refunded"].includes(st)) return false;
+    const isPaid = o.payment?.status === "paid";
+    if (!isPaid) return false;
+    // окно на возврат 30 дней
+    return daysSince(o.createdAt) <= 30;
+  };
+
+  const updateOrder = (id: string, patch: Partial<AnyOrder>) => {
+    const all = loadOrdersRaw();
+    const next = all.map(o => o.id === id ? { ...o, ...patch } : o);
+    saveOrdersRaw(next);
+    setOrdersVer(v => v + 1);
+  };
+
+  const cancelOrder = (o: AnyOrder & { _total: number }) => {
+    if (!canCancel(o)) return;
+    if (!confirm("Отменить этот заказ?")) return;
+    updateOrder(o.id, { status: "cancelled" });
+    alert("Заказ отменён.");
+  };
+
+  // форма возврата
+  const [returnForId, setReturnForId] = useState<string | null>(null);
+  const [retReason, setRetReason] = useState("");
+  const [retComment, setRetComment] = useState("");
+  const openReturnForm = (o: AnyOrder & { _total: number }) => {
+    setReturnForId(o.id);
+    setRetReason("");
+    setRetComment("");
+  };
+  const submitReturn = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!returnForId) return;
+    if (!retReason) {
+      alert("Пожалуйста, выберите причину возврата.");
+      return;
+    }
+    updateOrder(returnForId, {
+      status: "refund_requested",
+      refund: {
+        requestedAt: new Date().toISOString(),
+        reason: retReason,
+        comment: retComment || "",
+        approved: false,
+      }
+    });
+    setReturnForId(null);
+    setRetReason("");
+    setRetComment("");
+    alert("Запрос на возврат отправлен. Мы свяжемся с вами по email.");
+  };
 
   return (
     <div className="container">
@@ -184,6 +296,7 @@ export default function Profile() {
         <button className="btn" onClick={auth.logout}>Выйти</button>
       </div>
 
+      {/* ---------- Профиль ---------- */}
       {tab === "profile" && (
         <form className={`${styles.form}`} onSubmit={saveProfile}>
           <div className={styles.twoCols}>
@@ -201,6 +314,7 @@ export default function Profile() {
         </form>
       )}
 
+      {/* ---------- Адреса ---------- */}
       {tab === "address" && (
         <div className={styles.addrWrap}>
           <div className={styles.addrHead}>
@@ -335,6 +449,7 @@ export default function Profile() {
         </div>
       )}
 
+      {/* ---------- Заказы ---------- */}
       {tab === "orders" && (
         <div className={styles.ordersWrap}>
           {orders.length === 0 ? (
@@ -343,42 +458,103 @@ export default function Profile() {
             </div>
           ) : (
             <div className={styles.orderList}>
-              {orders.map((o) => (
-                <article key={o.id} className={`card ${styles.orderCard}`}>
-                  <header className={styles.orderHead}>
-                    <div>Заказ <b>{o.id.slice(0,8)}</b></div>
-                    <div className={styles.orderBadges}>
-                      <span className="badge">{new Date(o.createdAt).toLocaleString("de-DE")}</span>
-                      {o.payment?.status === "paid"
-                        ? <span className="badge" title={`•••• ${o.payment?.last4 || ""}`}>Оплачено</span>
-                        : <span className="badge">Ожидает оплаты</span>}
-                    </div>
-                  </header>
-                  <div className="hr" />
-                  <div className={styles.items}>
-                    {o.items.map(i => (
-                      <div key={i.id} className={styles.itemRow}>
-                        <div className={styles.itemLeft}>
-                          <div className={styles.thumb}>
-                            <img src={i.imageUrl} alt={i.title} />
-                          </div>
-                          <div>
-                            <div className={styles.itemTitle}>{i.title}</div>
-                            <Link to={`/product/${i.slug}`}>Открыть товар</Link>
-                          </div>
-                        </div>
-                        <div className={styles.itemQty}>×{i.qty}</div>
-                        <div className={styles.itemSum}><b>{fmtEUR(i.qty * i.price)}</b></div>
+              {orders.map((o) => {
+                const st: OrderStatus = (o.status as OrderStatus) || "processing";
+                return (
+                  <article key={o.id} className={`card ${styles.orderCard}`}>
+                    <header className={styles.orderHead}>
+                      <div>Заказ <b>{o.id.slice(0,8)}</b></div>
+                      <div className={styles.orderBadges}>
+                        <span className="badge">{new Date(o.createdAt).toLocaleString("de-DE")}</span>
+                        {o.payment?.status === "paid"
+                          ? <span className="badge" title={`•••• ${o.payment?.last4 || ""}`}>Оплачено</span>
+                          : <span className="badge">Ожидает оплаты</span>}
+                        <span className={`${styles.statusBadge} badge`} data-variant={BADGES[st] || "info"}>
+                          {statusLabel[st]}
+                        </span>
                       </div>
-                    ))}
-                  </div>
-                  <div className="hr" />
-                  <div className={styles.totalRow}>
-                    <span>Итого</span>
-                    <b>{fmtEUR((o as any)._total)}</b>
-                  </div>
-                </article>
-              ))}
+                    </header>
+
+                    <div className="hr" />
+                    <div className={styles.items}>
+                      {o.items.map(i => (
+                        <div key={i.id} className={styles.itemRow}>
+                          <div className={styles.itemLeft}>
+                            <div className={styles.thumb}>
+                              <img src={i.imageUrl} alt={i.title} />
+                            </div>
+                            <div>
+                              <div className={styles.itemTitle}>{i.title}</div>
+                              <Link to={`/product/${i.slug}`}>Открыть товар</Link>
+                            </div>
+                          </div>
+                          <div className={styles.itemQty}>×{i.qty}</div>
+                          <div className={styles.itemSum}><b>{fmtEUR(i.qty * i.price)}</b></div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="hr" />
+                    <div className={styles.totalRow}>
+                      <span>Итого</span>
+                      <b>{fmtEUR((o as any)._total)}</b>
+                    </div>
+
+                    {/* Действия по заказу */}
+                    <div className={styles.orderActions}>
+                      {canCancel(o as any) && (
+                        <button className="btn" onClick={() => cancelOrder(o as any)}>
+                          Отменить заказ
+                        </button>
+                      )}
+                      {canRequestReturn(o as any) && (
+                        <button className="btn" onClick={() => openReturnForm(o as any)}>
+                          Запросить возврат
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Форма возврата (инлайн) */}
+                    {returnForId === o.id && (
+                      <form className={styles.returnForm} onSubmit={submitReturn}>
+                        <div className={styles.twoCols}>
+                          <label className={styles.field}>
+                            <span>Причина</span>
+                            <select
+                              className="input"
+                              value={retReason}
+                              onChange={(e) => setRetReason(e.target.value)}
+                              required
+                            >
+                              <option value="">— выберите причину —</option>
+                              <option value="not_fit">Не подошёл / не понравился</option>
+                              <option value="defect">Брак / повреждение</option>
+                              <option value="wrong">Неверный товар</option>
+                              <option value="other">Другое</option>
+                            </select>
+                          </label>
+                          <label className={styles.field}>
+                            <span>Комментарий (необязательно)</span>
+                            <input
+                              className="input"
+                              value={retComment}
+                              onChange={(e) => setRetComment(e.target.value)}
+                              placeholder="Опишите детали, если нужно"
+                            />
+                          </label>
+                        </div>
+                        <div className={styles.formActions}>
+                          <button type="button" className="btn" onClick={() => setReturnForId(null)}>Отмена</button>
+                          <button type="submit" className="btn btnPrimary">Отправить запрос</button>
+                        </div>
+                        <div className={styles.hint}>
+                          После подтверждения мы пришлём инструкцию по возврату на ваш email.
+                        </div>
+                      </form>
+                    )}
+                  </article>
+                );
+              })}
             </div>
           )}
         </div>

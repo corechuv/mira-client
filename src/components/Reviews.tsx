@@ -1,3 +1,4 @@
+// src/components/Reviews.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import styles from "./Reviews.module.scss";
 import { Review, seedReviews } from "@/data/reviews";

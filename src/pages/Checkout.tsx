@@ -1,3 +1,4 @@
+// src/pages/Checkout.tsx
 import Field from "@/components/Field";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";

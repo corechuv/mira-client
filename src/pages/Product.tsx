@@ -1,3 +1,4 @@
+// src/pages/Product.tsx
 import { useRoute } from "@/router/Router";
 import styles from "./Product.module.scss";
 import { products } from "@/data/products";

@@ -1,3 +1,4 @@
+// src/data/products.ts
 export type Product = {
   id: string;
   slug: string;

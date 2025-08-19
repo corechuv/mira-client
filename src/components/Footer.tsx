@@ -1,3 +1,4 @@
+// src/components/Footer.tsx
 import styles from "./Footer.module.scss";
 import { Link } from "@/router/Router";
 

@@ -1,3 +1,4 @@
+// src/pages/Auth.tsx
 import { useState } from "react";
 import styles from "./Auth.module.scss";
 import { Link, navigate } from "@/router/Router";

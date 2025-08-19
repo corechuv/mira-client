@@ -1,3 +1,4 @@
+// src/pages/Home.tsx
 import styles from "./Home.module.scss";
 import { Link } from "@/router/Router";
 import { useProducts } from "@/contexts/ProductsContext";

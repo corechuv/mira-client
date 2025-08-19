@@ -1,3 +1,4 @@
+// src/components/FiltersPanel.tsx
 import { useMemo, useState } from "react";
 import styles from "./FiltersPanel.module.scss";
 import { useProducts, SortKey } from "@/contexts/ProductsContext";

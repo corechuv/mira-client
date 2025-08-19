@@ -1,3 +1,4 @@
+// src/pages/Profile.module.scss
 /* Tabs */
 .tabs { display: grid; grid-auto-flow: column; gap: .5rem; align-items: center; margin-bottom: .8rem; }
 .tab, .tabActive {
@@ -72,4 +73,25 @@
   .twoCols { grid-template-columns: 1fr; }
   .itemRow { grid-template-columns: 1fr auto; }
   .itemSum { grid-column: 2 / 3;  margin-top: 10px }
+}
+
+/* статус-бейджи (цвета) */
+.statusBadge[data-variant="info"]  { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.16); }
+.statusBadge[data-variant="good"]  { background: rgba(80, 200, 120, 0.12); border-color: rgba(80, 200, 120, 0.35); }
+.statusBadge[data-variant="warn"]  { background: rgba(255, 186, 0, 0.12); border-color: rgba(255, 186, 0, 0.35); }
+.statusBadge[data-variant="bad"]   { background: rgba(255, 80, 80, 0.12); border-color: rgba(255, 80, 80, 0.35); }
+
+/* действия под заказом */
+.orderActions {
+  margin-top: .6rem;
+  display: flex; gap: .6rem; flex-wrap: wrap;
+}
+
+/* форма возврата */
+.returnForm {
+  margin-top: .6rem;
+  padding: .8rem;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
 }

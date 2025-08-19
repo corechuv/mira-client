@@ -1,3 +1,4 @@
+// src/pages/Payment.tsx
 import styles from "./Payment.module.scss";
 import { useEffect, useMemo, useState } from "react";
 import { navigate } from "@/router/Router";

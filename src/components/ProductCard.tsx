@@ -1,3 +1,4 @@
+// src/components/ProductCard.tsx
 import { Link } from "@/router/Router";
 import styles from "./ProductCard.module.scss";
 import { useCart } from "@/contexts/CartContext";

@@ -1,3 +1,4 @@
+// src/pages/Catalog.tsx
 import { useState } from "react";
 import { useProducts } from "@/contexts/ProductsContext";
 import ProductCard from "@/components/ProductCard";

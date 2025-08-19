@@ -1,3 +1,4 @@
+// src/components/ProductsRail.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import styles from "./ProductsRail.module.scss";
 import { Product } from "@/data/products";

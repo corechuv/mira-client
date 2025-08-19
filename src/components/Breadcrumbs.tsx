@@ -1,3 +1,4 @@
+// src/components/Breadcrumbs.tsx
 import { Link } from "@/router/Router";
 import styles from "./Breadcrumbs.module.scss";
 

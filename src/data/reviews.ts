@@ -1,3 +1,4 @@
+// src/data/reviews.ts
 export type Review = {
   id: string;
   productId: string;

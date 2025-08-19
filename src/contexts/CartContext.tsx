@@ -1,3 +1,4 @@
+// src/contexts/CartContext.tsx
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { Product } from "@/data/products";
 

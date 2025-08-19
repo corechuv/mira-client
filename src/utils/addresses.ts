@@ -1,3 +1,4 @@
+// src/utils/addresses.ts
 export type PackType = "packstation" | "postfiliale";
 export type Address = {
   id: string;

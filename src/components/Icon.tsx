@@ -1,4 +1,4 @@
-// Icon.tsx
+// src/components/Icon.tsx
 import React from "react";
 
 export type IconName =

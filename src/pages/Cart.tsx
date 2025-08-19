@@ -1,3 +1,4 @@
+// src/pages/Cart.tsx
 import { useCart } from "@/contexts/CartContext";
 import styles from "./Cart.module.scss";
 import { Link } from "@/router/Router";

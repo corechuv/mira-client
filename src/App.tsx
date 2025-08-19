@@ -1,3 +1,4 @@
+// src/App.tsx
 import { CartProvider } from "./contexts/CartContext";
 import { ProductsProvider } from "./contexts/ProductsContext";
 import { AuthProvider } from "./contexts/AuthContext";

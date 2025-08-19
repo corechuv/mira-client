@@ -1,3 +1,4 @@
+// src/components/Header.tsx
 import { Link } from "@/router/Router";
 import { useCart } from "@/contexts/CartContext";
 import styles from "./Header.module.scss";

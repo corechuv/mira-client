@@ -1,3 +1,4 @@
+// src/data/categories.ts
 export type CategoryNode = {
   title: string;
   slug: string;

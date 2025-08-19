@@ -1,3 +1,4 @@
+// src/components/SearchOverlay.tsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import styles from "./SearchOverlay.module.scss";

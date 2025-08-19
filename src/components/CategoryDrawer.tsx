@@ -1,3 +1,4 @@
+// src/components/CategoryDrawer.tsx
 import styles from "./CategoryDrawer.module.scss";
 import { useState } from "react";
 import { categories, CategoryNode } from "@/data/categories";
