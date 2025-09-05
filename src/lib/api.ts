@@ -16,6 +16,62 @@ const withLocale = (path: string) => {
   return `${path}${sep}locale=${encodeURIComponent(__apiLocale)}`;
 };
 
+/* ===================== Geo (country by IP) ===================== */
+/** localStorage cache so we don’t hit the endpoint every time */
+const GEO_CACHE_KEY = "pm.geo.country.v1";
+
+function parseCountryCode(payload: any): string | null {
+  if (!payload) return null;
+  if (typeof payload === "string") return payload.trim().toUpperCase() || null;
+
+  // поддерживаем разные форматы ответов бэка
+  const cand =
+    payload.country ||
+    payload.country_code ||
+    payload.countryCode ||
+    payload.ip_country ||
+    payload.cc ||
+    payload.iso ||
+    payload.ISO ||
+    payload.code;
+  return typeof cand === "string" ? cand.trim().toUpperCase() : null;
+}
+
+async function fetchCountryNoCache(): Promise<string | null> {
+  // пробуем несколько возможных роутов на бэке
+  const variants = [
+    { path: "/geo/country", init: { method: "GET" } },
+    { path: "/geo",         init: { method: "GET" } },
+    { path: "/whoami",      init: { method: "GET" } },
+    { path: "/ip",          init: { method: "GET" } },
+  ];
+  try {
+    const res = await tryReq<any>(variants);
+    return parseCountryCode(res);
+  } catch {
+    return null;
+  }
+}
+
+/** Получить ISO-код страны (UA/DE/…): сначала из кэша, иначе с бэка. */
+async function getCountry(opts?: { ttlMs?: number }): Promise<string | null> {
+  const ttlMs = opts?.ttlMs ?? 24 * 60 * 60 * 1000; // 24h
+  try {
+    const raw = localStorage.getItem(GEO_CACHE_KEY);
+    if (raw) {
+      const { cc, ts } = JSON.parse(raw) as { cc: string; ts: number };
+      if (cc && Date.now() - ts < ttlMs) return cc;
+    }
+  } catch { /* ignore */ }
+
+  const cc = await fetchCountryNoCache();
+  try {
+    if (cc) localStorage.setItem(GEO_CACHE_KEY, JSON.stringify({ cc, ts: Date.now() }));
+  } catch { /* ignore */ }
+  return cc;
+}
+/* ==================== Normalizers ==================== */
+
 function normalizeReview(r: any): Review {
   return {
     id: r.id ?? r.review_id ?? crypto.randomUUID(),
@@ -356,6 +412,11 @@ export const api = {
 
     const res = await tryReq<any>(variants);
     return normalizeMe(res);
+  },
+
+  misc: {
+    /** Вернёт "UA", "DE", "PL" и т.д. или null, если не удалось определить */
+    getCountry,
   },
 
   reviews,

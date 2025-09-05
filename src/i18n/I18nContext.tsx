@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { setApiLocale } from "@/lib/api";
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { api, setApiLocale } from "@/lib/api";
 
 export type Locale = "ru" | "uk" | "en" | "de";
 const LOCALE_KEY = "pm.locale";
+const SUPPORTED: Locale[] = ["ru", "uk", "en", "de"];
 
 type Dict = Record<string, string>;
 type Bundle = Record<Locale, Dict>;
@@ -1412,37 +1413,117 @@ const bundle: Bundle = {
 };
 
 type Ctx = {
-    locale: Locale;
-    setLocale: (l: Locale) => void;
-    t: (key: string, fallback?: string) => string;
+  locale: Locale;
+  setLocale: (l: Locale) => void;
+  t: (key: string, fallback?: string) => string;
 };
 
 const I18nCtx = createContext<Ctx | null>(null);
 
+function isLocale(v: any): v is Locale {
+  return SUPPORTED.includes(v);
+}
+
+function pickFromNavigator(): Locale | null {
+  if (typeof navigator === "undefined") return null;
+  const langs = (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language]).filter(Boolean);
+  for (const l of langs) {
+    const low = (l || "").toLowerCase();           // "uk-ua", "de-de"
+    const lang = low.split("-")[0] as Locale;      // "uk", "de"
+    if (isLocale(lang)) return lang;
+    // попытка по стране
+    const region = low.split("-")[1]?.toUpperCase(); // "UA", "DE"
+    const byCountry = mapCountryToLocale(region || "");
+    if (byCountry) return byCountry;
+  }
+  return null;
+}
+
+// Мэппинг страны → локаль (расширяй по необходимости)
+function mapCountryToLocale(cc: string): Locale | null {
+  switch (cc) {
+    case "UA": return "uk";
+    case "DE": case "AT": case "CH": return "de";
+    case "RU": case "BY": case "KZ": return "ru";
+    default: return null;
+  }
+}
+
+// Опционально: спросить бэк «какая у меня страна?»
+async function getCountryFromBackend(): Promise<string | null> {
+  const resp = await api.misc.getCountry(); // должен вернуть, например, { country: "UA" }
+  if (resp && typeof resp === "object" && "country" in resp) {
+    return (resp as { country?: string }).country || null;
+  }
+  return null;
+}
+
+
 export const I18nProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
-    const initial = (): Locale => {
-        const saved = (localStorage.getItem(LOCALE_KEY) as Locale | null) || "ru";
-        return (["ru", "uk", "en", "de"] as const).includes(saved as any) ? saved : "ru";
-    };
-    const [locale, setLoc] = useState<Locale>(initial);
+  // Эти ref'ы помогают решить: можно ли потом «переиграть» язык после первого рендера
+  const urlLangRef = useRef<string | null>(null);
+  const hadSavedRef = useRef<boolean>(false);
 
-    useEffect(() => {
-        localStorage.setItem(LOCALE_KEY, locale);
-        document.documentElement.lang = locale;
-        setApiLocale(locale);
-    }, [locale]);
+  const initial = (): Locale => {
+    // 1) URL override: ?lang=uk или ?hl=de
+    try {
+      const url = new URL(window.location.href);
+      const qp = (url.searchParams.get("lang") || url.searchParams.get("hl") || "").toLowerCase();
+      if (isLocale(qp)) {
+        urlLangRef.current = qp;
+        return qp;
+      }
+    } catch { /* no-op */ }
 
-    const t = useMemo(() => {
-        const dict = bundle[locale] || bundle.ru;
-        return (key: string, fallback = key) => dict[key] ?? fallback;
-    }, [locale]);
+    // 2) Saved
+    const saved = (typeof localStorage !== "undefined" ? (localStorage.getItem(LOCALE_KEY) as Locale | null) : null);
+    hadSavedRef.current = isLocale(saved);
+    if (isLocale(saved)) return saved;
 
-    const value = useMemo(() => ({ locale, setLocale: setLoc, t }), [locale, t]);
-    return <I18nCtx.Provider value={value}>{children}</I18nCtx.Provider>;
+    // 3) Navigator
+    const nav = pickFromNavigator();
+    if (nav) return nav;
+
+    // 4) Fallback: по умолчанию — УКРАИНСКИЙ
+    return "uk";
+  };
+
+  const [locale, setLoc] = useState<Locale>(initial);
+
+  // 4) (опция) Один раз попробуем определить страну по IP, если язык не сохранён и нет URL-override
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (hadSavedRef.current || urlLangRef.current) return; // пользователь уже что-то выбрал/задал
+      const cc = await getCountryFromBackend(); // вернёт "UA" | "DE" | null
+      if (!cc) return;
+      const byCountry = mapCountryToLocale(cc);
+      if (byCountry && byCountry !== locale && !cancelled) {
+        setLoc(byCountry);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [locale]);
+
+  // Побочные эффекты при смене языка
+  useEffect(() => {
+    try { localStorage.setItem(LOCALE_KEY, locale); } catch {}
+    if (typeof document !== "undefined") document.documentElement.lang = locale;
+    setApiLocale(locale);
+  }, [locale]);
+
+  const t = useMemo(() => {
+    const dict = (bundle as Bundle)[locale] || (bundle as Bundle).uk;
+    return (key: string, fallback = key) => dict[key] ?? fallback;
+  }, [locale]);
+
+  const value = useMemo(() => ({ locale, setLocale: setLoc, t }), [locale, t]);
+
+  return <I18nCtx.Provider value={value}>{children}</I18nCtx.Provider>;
 };
 
 export function useI18n() {
-    const ctx = useContext(I18nCtx);
-    if (!ctx) throw new Error("useI18n must be used within I18nProvider");
-    return ctx;
+  const ctx = useContext(I18nCtx);
+  if (!ctx) throw new Error("useI18n must be used within I18nProvider");
+  return ctx;
 }
