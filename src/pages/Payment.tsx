@@ -1,27 +1,33 @@
+// src/pages/Payment.tsx
 import styles from "./Payment.module.scss";
 import { useEffect, useMemo, useState } from "react";
 import { navigate } from "@/router/Router";
-import Field from "@/components/Field";
 import { useCart } from "@/contexts/CartContext";
 import { fmtEUR } from "@/utils/money";
 import { api } from "@/lib/api";
 
-import { loadStripe } from "@stripe/stripe-js";
+import { loadStripe, Stripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
-
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY!);
 
 export default function Payment() {
   const draftRaw = localStorage.getItem("pm.checkoutDraft.v1");
   const draft = draftRaw ? JSON.parse(draftRaw) : null;
 
+  // ① если нет драфта — уходим на checkout
   useEffect(() => {
     if (!draft) navigate("/checkout");
   }, [draft]);
-
   if (!draft) return null;
 
-  // грузим client_secret (PaymentIntent) с бэка
+  // ② берём ключ из окружения
+  const pk = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined;
+
+  // ③ лениво загружаем Stripe только если ключ есть
+  const stripePromise = useMemo<Promise<Stripe | null> | null>(() => {
+    return pk ? loadStripe(pk) : null;
+  }, [pk]);
+
+  // ④ грузим client_secret (PaymentIntent) с бэка
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
@@ -37,6 +43,19 @@ export default function Payment() {
     })();
   }, []);
 
+  // ⑤ фолбэк, если нет publishable key
+  if (!pk) {
+    return (
+      <div className="container">
+        <h1>Оплата</h1>
+        <div className="card" style={{ padding: "1rem" }}>
+          Платёжная форма недоступна: не задан <code>VITE_STRIPE_PUBLISHABLE_KEY</code> при сборке.
+          Задайте переменную окружения и пересоберите сайт.
+        </div>
+      </div>
+    );
+  }
+
   if (err) {
     return (
       <div className="container">
@@ -45,7 +64,7 @@ export default function Payment() {
       </div>
     );
   }
-  if (!clientSecret) {
+  if (!clientSecret || !stripePromise) {
     return (
       <div className="container">
         <h1>Оплата</h1>

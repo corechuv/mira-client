@@ -249,7 +249,7 @@ export default function DeliveryInfo({ productPrice }: { productPrice: number })
           <span className={styles.icon} aria-hidden />
           <div>
             <div className={styles.infoTitle}>Оплата</div>
-            <div className={styles.infoText}>Visa, Mastercard.</div>
+            <div className={styles.infoText}>Klarna, Visa, Mastercard, Amazon Pay</div>
           </div>
         </li>
         <li>
