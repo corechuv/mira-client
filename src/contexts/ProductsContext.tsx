@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { Product } from "@/types/product";
 import { api } from "@/lib/api";
+import { useI18n } from "@/i18n/I18nContext";
+
 
 export type SortKey = "popular" | "price-asc" | "price-desc";
 
@@ -29,6 +31,7 @@ export type ProductsState = {
 const Ctx = createContext<ProductsState | null>(null);
 
 export const ProductsProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
+  const { locale } = useI18n();
   const [all, setAll] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string|null>(null);
@@ -38,15 +41,14 @@ export const ProductsProvider: React.FC<React.PropsWithChildren> = ({ children }
     (async () => {
       setLoading(true);
       try {
-        const items = await api.products();
+        const items = await api.products();   // locale уже прикрутится внутри req()
         if (!dead) { setAll(items); setError(null); }
       } catch (e: any) {
         if (!dead) setError(e?.message || "Не удалось загрузить каталог");
-        // на крайний случай — оставим пусто
       } finally { if (!dead) setLoading(false); }
     })();
     return () => { dead = true; };
-  }, []);
+  }, [locale]);
 
   const priceMin = all.length ? Math.min(...all.map(p => p.price)) : 0;
   const priceMax = all.length ? Math.max(...all.map(p => p.price)) : 1000;

@@ -1,7 +1,8 @@
 // src/components/Footer.tsx
 import styles from "./Footer.module.scss";
 import { Link } from "@/router/Router";
-import LogoMark from "./Logo/LogoMark";
+import { useI18n } from "@/i18n/I18nContext";
+
 
 type IconItem = {
   src: string;
@@ -40,21 +41,22 @@ const onImgError = (e: React.SyntheticEvent<HTMLImageElement>) => {
 const toPx = (v?: number | string) => (typeof v === "number" ? `${v}px` : v);
 
 export default function Footer() {
+  const { t } = useI18n();
+
   return (
     <footer className={styles.footer}>
       <div className="container">
         <div className={styles.grid}>
-
           <nav className={styles.links} aria-label="Ссылки">
-            <Link to="/catalog">Каталог</Link>
-            <Link to="/profile?tab=orders">Заказы</Link>
-            <Link to="/profile">Профиль</Link>
+            <Link to="/catalog">{t("nav.catalog", "Каталог")}</Link>
+            <Link to="/profile?tab=orders">{t("nav.orders", "Заказы")}</Link>
+            <Link to="/profile">{t("nav.profile", "Профиль")}</Link>
           </nav>
         </div>
 
         <div className={styles.iconSection}>
           <div className={styles.iconGroup} aria-label="Доставка">
-            <span className={styles.groupTitle}>Доставка</span>
+            <span className={styles.groupTitle}>{t("footer.shipping", "Доставка")}</span>
             <ul className={styles.icons}>
               {shipping.map((i) => (
                 <li key={i.alt} className={styles.iconItem}>
@@ -100,18 +102,10 @@ export default function Footer() {
         <div className={styles.bottom}>
           <div className={styles.legal}>
             <ul>
-              <li>
-                <Link to="/privacy">Политика конфиденциальности</Link>
-              </li>
-              <li>
-                <Link to="/terms">Условия использования</Link>
-              </li>
-              <li>
-                <Link to="/cookies">Политика использования cookies</Link>
-              </li>
-              <li>
-                <Link to="/contacts">Контакты</Link>
-              </li>
+              <li><Link to="/privacy">{t("footer.privacy", "Политика конфиденциальности")}</Link></li>
+              <li><Link to="/terms">{t("footer.terms", "Условия использования")}</Link></li>
+              <li><Link to="/cookies">{t("footer.cookies", "Политика использования cookies")}</Link></li>
+              <li><Link to="/contacts">{t("footer.contacts", "Контакты")}</Link></li>
             </ul>
           </div>
           <div className={styles.copy}>© {new Date().getFullYear()} Mira</div>

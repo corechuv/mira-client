@@ -4,16 +4,18 @@ import styles from "./Cart.module.scss";
 import { Link } from "@/router/Router";
 import { fmtEUR } from "@/utils/money";
 import Icon from "@/components/Icon";
+import { useI18n } from "@/i18n/I18nContext";
 
 export default function Cart() {
+  const { t } = useI18n();
   const { items, setQty, remove, total } = useCart();
 
   return (
     <div className="container">
-      <h1>Корзина</h1>
+      <h1>{t("nav.cart")}</h1>
       <div className={`card ${styles.wrap}`}>
         <div className={styles.list}>
-          {items.length === 0 && <div className={styles.empty}>Корзина пуста</div>}
+          {items.length === 0 && <div className={styles.empty}>{t("cart.empty")}</div>}
           {items.map(i => (
             <div className={styles.row} key={i.id}>
               <div className={styles.cellTitle}>
@@ -22,12 +24,17 @@ export default function Cart() {
                 </div>
                 <div>
                   <div className={styles.title}>{i.title}</div>
-                  <Link to={`/product/${i.slug}`} className={styles.link}>Подробнее</Link>
+                  <Link to={`/product/${i.slug}`} className={styles.link}>
+                    {t("product.open")}
+                  </Link>
                 </div>
               </div>
-              <div className={styles.cell} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+              <div
+                className={styles.cell}
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}
+              >
                 <input
-                  className={`${styles.qty}`}
+                  className={styles.qty}
                   type="number"
                   min={1}
                   value={i.qty}
@@ -36,7 +43,7 @@ export default function Cart() {
               </div>
               <div className={styles.cell}>{fmtEUR(i.price * i.qty)}</div>
               <div className={styles.cell}>
-                <div className={styles.btnIcon} onClick={() => remove(i.id)}>
+                <div className={styles.btnIcon} onClick={() => remove(i.id)} role="button" aria-label="remove">
                   <Icon name="close" width={20} />
                 </div>
               </div>
@@ -45,10 +52,12 @@ export default function Cart() {
         </div>
         <aside className={styles.aside + " card"}>
           <div className={styles.totalRow}>
-            <span>Итого</span>
+            <span>{t("cart.total")}</span>
             <b>{fmtEUR(total)}</b>
           </div>
-          <Link to="/checkout" className="btn btnPrimary btn100">Перейти к оформлению</Link>
+          <Link to="/checkout" className="btn btnPrimary btn100">
+            {t("btn.checkout")}
+          </Link>
         </aside>
       </div>
     </div>

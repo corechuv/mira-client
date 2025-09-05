@@ -4,8 +4,11 @@ import styles from "./Auth.module.scss";
 import { Link, navigate } from "@/router/Router";
 import { useAuth } from "@/contexts/AuthContext";
 import LogoMark from "@/components/Logo/LogoMark";
+import { useI18n } from "@/i18n/I18nContext";
 
 export default function Auth() {
+  const { t } = useI18n();
+
   const [mode, setMode] = useState<"login" | "register">("login");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -33,7 +36,7 @@ export default function Auth() {
       await login(email.trim(), password);
       navigate(nextURL);
     } catch (err: any) {
-      setError(err?.message || "Не удалось войти.");
+      setError(err?.message || t("auth.err.loginFailed"));
     } finally {
       setBusy(false);
     }
@@ -42,13 +45,13 @@ export default function Auth() {
   const onRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (!agree) { setError("Необходимо согласиться с условиями."); return; }
+    if (!agree) { setError(t("auth.err.agreeRequired")); return; }
     setBusy(true);
     try {
       await register(name.trim(), email.trim(), password);
       navigate(nextURL);
     } catch (err: any) {
-      setError(err?.message || "Не удалось создать аккаунт.");
+      setError(err?.message || t("auth.err.registerFailed"));
     } finally {
       setBusy(false);
     }
@@ -65,7 +68,7 @@ export default function Auth() {
             className={mode === "login" ? styles.tabActive : styles.tab}
             onClick={() => setMode("login")}
           >
-            Вход
+            {t("auth.tabs.login")}
           </button>
           <button
             role="tab"
@@ -73,7 +76,7 @@ export default function Auth() {
             className={mode === "register" ? styles.tabActive : styles.tab}
             onClick={() => setMode("register")}
           >
-            Регистрация
+            {t("auth.tabs.register")}
           </button>
         </div>
 
@@ -82,53 +85,57 @@ export default function Auth() {
         {mode === "login" ? (
           <form className={styles.form} onSubmit={onLogin}>
             <label className={styles.field}>
-              <span>Email</span>
+              <span>{t("auth.field.email")}</span>
               <input className="input" type="email" value={email} onChange={e=>setEmail(e.target.value)} required />
             </label>
             <label className={styles.field}>
-              <span>Пароль</span>
+              <span>{t("auth.field.password")}</span>
               <input className="input" type="password" value={password} onChange={e=>setPassword(e.target.value)} required />
             </label>
             <button className="btn btnPrimary" type="submit" disabled={busy}>
-              {busy ? "Входим..." : "Войти"}
+              {busy ? t("auth.btn.login.busy") : t("auth.btn.login")}
             </button>
 
             <div className={styles.alt}>
-              Нет аккаунта?{" "}
-              <button type="button" className={styles.linkBtn} onClick={()=>setMode("register")}>Создать</button>
+              {t("auth.switch.noAccount")}{" "}
+              <button type="button" className={styles.linkBtn} onClick={()=>setMode("register")}>
+                {t("auth.switch.create")}
+              </button>
             </div>
           </form>
         ) : (
           <form className={styles.form} onSubmit={onRegister}>
             <label className={styles.field}>
-              <span>Имя</span>
-              <input className="input" value={name} onChange={e=>setName(e.target.value)} placeholder="Имя" />
+              <span>{t("auth.field.name")}</span>
+              <input className="input" value={name} onChange={e=>setName(e.target.value)} placeholder={t("auth.field.name")} />
             </label>
             <label className={styles.field}>
-              <span>Email</span>
+              <span>{t("auth.field.email")}</span>
               <input className="input" type="email" value={email} onChange={e=>setEmail(e.target.value)} required />
             </label>
             <label className={styles.field}>
-              <span>Пароль</span>
+              <span>{t("auth.field.password")}</span>
               <input className="input" type="password" value={password} onChange={e=>setPassword(e.target.value)} required />
             </label>
             <label className={styles.check}>
               <input type="checkbox" checked={agree} onChange={e=>setAgree(e.target.checked)} />
-              <span>Я согласен с условиями и политикой конфиденциальности.</span>
+              <span>{t("auth.agree")}</span>
             </label>
             <button className="btn btnPrimary" type="submit" disabled={busy}>
-              {busy ? "Создаём..." : "Создать аккаунт"}
+              {busy ? t("auth.btn.register.busy") : t("auth.btn.register")}
             </button>
 
             <div className={styles.alt}>
-              Уже есть аккаунт?{" "}
-              <button type="button" className={styles.linkBtn} onClick={()=>setMode("login")}>Войти</button>
+              {t("auth.switch.haveAccount")}{" "}
+              <button type="button" className={styles.linkBtn} onClick={()=>setMode("login")}>
+                {t("auth.switch.login")}
+              </button>
             </div>
           </form>
         )}
 
         <div className={styles.backRow}>
-          <Link to="/" className="btn">На главную</Link>
+          <Link to="/" className="btn">{t("auth.backHome")}</Link>
         </div>
       </div>
     </div>

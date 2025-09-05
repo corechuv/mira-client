@@ -1,3 +1,4 @@
+// src/types/location.ts
 export type PickupLocation = {
   id: string;
   name: string;

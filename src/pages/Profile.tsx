@@ -1,5 +1,5 @@
 // src/pages/Profile.tsx
-import { useMemo, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import styles from "./Profile.module.scss";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link } from "@/router/Router";
@@ -12,32 +12,24 @@ import {
   updateAddress as updateAddressSrv,
   removeAddress as removeAddressSrv,
   setDefaultAddress as setDefaultAddressSrv,
-  saveAddresses as saveAddressesLocal,
 } from "@/utils/addresses";
 import type { Address } from "@/types";
 import type { Order, OrderStatus } from "@/types";
 import { listOrders as listOrdersSrv, requestReturn as requestReturnSrv, cancelOrder as cancelOrderSrv } from "@/utils/orders";
-
+import { useI18n, Locale } from "@/i18n/I18nContext";
 
 /* ===== Utils ===== */
-function addrToLines(a: Address): string[] {
+function addrToLines(
+  a: Address,
+  labels: { postfiliale: string; packstation: string }
+): string[] {
   const l1 = [a.firstName, a.lastName].filter(Boolean).join(" ");
   const l2 = a.packType
-    ? `${a.packType === "postfiliale" ? "Postfiliale" : "Packstation"}${a.stationNr ? " #" + a.stationNr : ""}`
+    ? `${a.packType === "postfiliale" ? labels.postfiliale : labels.packstation}${a.stationNr ? " #" + a.stationNr : ""}`
     : [a.street, a.house].filter(Boolean).join(" ");
   const l3 = [a.zip, a.city].filter(Boolean).join(" ");
   return [l1, l2, l3].filter(Boolean);
 }
-
-const statusLabel: Record<OrderStatus, string> = {
-  processing: "Обработка",
-  packed: "Собираем",
-  shipped: "Отправлен",
-  delivered: "Доставлен",
-  cancelled: "Отменён",
-  refund_requested: "Возврат запрошен",
-  refunded: "Возврат оформлен",
-};
 
 const BADGES: Partial<Record<OrderStatus, "info" | "warn" | "good" | "bad">> = {
   processing: "info",
@@ -52,16 +44,24 @@ const BADGES: Partial<Record<OrderStatus, "info" | "warn" | "good" | "bad">> = {
 const nowMs = () => Date.now();
 const daysSince = (iso: string) => (nowMs() - +new Date(iso)) / 86400000;
 
+const DATE_LOCALE: Record<Locale, string> = {
+  ru: "ru-RU",
+  uk: "uk-UA",
+  en: "en-US",
+  de: "de-DE",
+};
+
 /* ======================= Вью «гость» ======================= */
 function ProfileGuest() {
+  const { t } = useI18n();
   return (
     <div className="container">
-      <h1>Профиль</h1>
+      <h1>{t("profile.title")}</h1>
       <div className={`card ${styles.empty}`}>
-        <div>Вы не авторизованы.</div>
+        <div>{t("guest.notAuth")}</div>
         <div className={styles.emptyActions}>
-          <Link to="/auth?next=/profile" className="btn btnPrimary">Войти / Регистрация</Link>
-          <Link to="/" className="btn">На главную</Link>
+          <Link to="/auth?next=/profile" className="btn btnPrimary">{t("guest.login")}</Link>
+          <Link to="/" className="btn">{t("guest.home")}</Link>
         </div>
       </div>
     </div>
@@ -72,20 +72,23 @@ function ProfileGuest() {
 function ProfileAuthed() {
   const auth = useAuth();
   const user = auth.user!;
+  const { t, locale } = useI18n();
+
+  const statusLabel = (st: OrderStatus) => t(`order.status.${st}`);
 
   // tabs
   const initTab = (): "profile" | "address" | "orders" => {
     try {
-      const t = new URL(window.location.href).searchParams.get("tab");
-      return (t === "address" || t === "orders") ? t : "profile";
+      const tParam = new URL(window.location.href).searchParams.get("tab");
+      return (tParam === "address" || tParam === "orders") ? tParam : "profile";
     } catch { return "profile"; }
   };
   const [tab, _setTab] = useState<"profile" | "address" | "orders">(initTab());
-  const setTab = (t: "profile" | "address" | "orders") => {
-    _setTab(t);
+  const setTab = (tgt: "profile" | "address" | "orders") => {
+    _setTab(tgt);
     try {
       const url = new URL(window.location.href);
-      url.searchParams.set("tab", t);
+      url.searchParams.set("tab", tgt);
       history.replaceState(null, "", url.toString());
     } catch { }
   };
@@ -105,9 +108,9 @@ function ProfileAuthed() {
     const nextEmail = email.trim();
     try {
       await auth.updateProfile({ name: nextName, email: nextEmail });
-      // тут можно показать "Сохранено"
+      // можно показать тост "Сохранено"
     } catch (err: any) {
-      alert(err?.message || "Не удалось сохранить профиль.");
+      alert(err?.message || t("address.saveError"));
     }
   };
 
@@ -145,7 +148,7 @@ function ProfileAuthed() {
     e.preventDefault();
     const d = { ...draft };
     if (!d.firstName.trim() || !d.lastName.trim() || !d.zip.trim() || !d.city.trim()) {
-      alert("Пожалуйста, заполните имя, фамилию, PLZ и город.");
+      alert(t("address.validateRequired"));
       return;
     }
     d.firstName = d.firstName.trim();
@@ -165,20 +168,20 @@ function ProfileAuthed() {
       setEditingId(null);
       setDraft(emptyAddress(suggestFirst));
     } catch (err: any) {
-      alert(err?.message || "Не удалось сохранить адрес.");
+      alert(err?.message || t("address.saveError"));
     } finally {
       setAddrLoading(false);
     }
   };
 
   const removeAddress = async (id: string) => {
-    if (!confirm("Удалить этот адрес?")) return;
+    if (!confirm(t("address.deleteConfirm"))) return;
     try {
       setAddrLoading(true);
       const next = await removeAddressSrv(id);
       setAddresses(next);
     } catch (err: any) {
-      alert(err?.message || "Не удалось удалить адрес.");
+      alert(err?.message || t("address.deleteError"));
     } finally {
       setAddrLoading(false);
     }
@@ -190,7 +193,7 @@ function ProfileAuthed() {
       const next = await setDefaultAddressSrv(id);
       setAddresses(next);
     } catch (err: any) {
-      alert(err?.message || "Не удалось изменить адрес по умолчанию.");
+      alert(err?.message || t("address.defaultError"));
     } finally {
       setAddrLoading(false);
     }
@@ -231,10 +234,10 @@ function ProfileAuthed() {
 
   const cancelOrder = async (o: Order & { _total: number }) => {
     if (!canCancel(o)) return;
-    if (!confirm("Отменить этот заказ?")) return;
+    if (!confirm(t("order.cancelConfirm"))) return;
     await cancelOrderSrv(o.id);
     await reloadOrders();
-    alert("Заказ отменён.");
+    alert(t("order.cancelled"));
   };
 
   // форма возврата
@@ -251,24 +254,26 @@ function ProfileAuthed() {
   const submitReturn = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!returnForId) return;
-    if (!retReason) { alert("Пожалуйста, выберите причину возврата."); return; }
+    if (!retReason) { alert(t("order.return.missingReason")); return; }
     await requestReturnSrv(returnForId, retReason, retComment || "");
     setReturnForId(null);
     setRetReason(""); setRetComment("");
     await reloadOrders();
-    alert("Запрос на возврат отправлен.");
+    alert(t("order.return.sent"));
   };
+
+  const dateLocale = DATE_LOCALE[locale];
 
   return (
     <div className="container">
-      <h1>Профиль</h1>
+      <h1>{t("profile.title")}</h1>
 
       <div className={styles.tabs} role="tablist">
-        <button role="tab" aria-selected={tab === "profile"} className={tab === "profile" ? styles.tabActive : styles.tab} onClick={() => setTab("profile")}>Профиль</button>
-        <button role="tab" aria-selected={tab === "address"} className={tab === "address" ? styles.tabActive : styles.tab} onClick={() => setTab("address")}>Адреса</button>
-        <button role="tab" aria-selected={tab === "orders"} className={tab === "orders" ? styles.tabActive : styles.tab} onClick={() => setTab("orders")}>Заказы</button>
+        <button role="tab" aria-selected={tab === "profile"} className={tab === "profile" ? styles.tabActive : styles.tab} onClick={() => setTab("profile")}>{t("tabs.profile")}</button>
+        <button role="tab" aria-selected={tab === "address"} className={tab === "address" ? styles.tabActive : styles.tab} onClick={() => setTab("address")}>{t("tabs.address")}</button>
+        <button role="tab" aria-selected={tab === "orders"} className={tab === "orders" ? styles.tabActive : styles.tab} onClick={() => setTab("orders")}>{t("tabs.orders")}</button>
         <div className={styles.spacer} />
-        <button className="btn" onClick={auth.logout}>Выйти</button>
+        <button className="btn" onClick={auth.logout}>{t("common.logout")}</button>
       </div>
 
       {/* ---------- Профиль ---------- */}
@@ -276,16 +281,16 @@ function ProfileAuthed() {
         <form className={`${styles.form}`} onSubmit={saveProfile}>
           <div className={styles.twoCols}>
             <label className={styles.field}>
-              <span>Имя</span>
+              <span>{t("form.name")}</span>
               <input className="input" value={name} onChange={e => setName(e.target.value)} required />
             </label>
             <label className={styles.field}>
-              <span>Email</span>
+              <span>{t("form.email")}</span>
               <input className="input" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
             </label>
           </div>
-          <button className="btn btnPrimary" type="submit">Сохранить</button>
-          <div className={styles.hint}>Эти данные используются для заказов и уведомлений.</div>
+          <button className="btn btnPrimary" type="submit">{t("form.save")}</button>
+          <div className={styles.hint}>{t("profile.hint")}</div>
         </form>
       )}
 
@@ -293,17 +298,17 @@ function ProfileAuthed() {
       {tab === "address" && (
         <div className={styles.addrWrap}>
           <div className={styles.addrHead}>
-            <h2>Мои адреса</h2>
-            <button className="btn btnPrimary" onClick={startAdd} disabled={addrLoading}>Добавить адрес</button>
+            <h2>{t("address.my")}</h2>
+            <button className="btn btnPrimary" onClick={startAdd} disabled={addrLoading}>{t("address.add")}</button>
           </div>
 
           {addrLoading && (
-            <div className="card" style={{ padding: ".7rem" }}>Синхронизируем адреса…</div>
+            <div className="card" style={{ padding: ".7rem" }}>{t("address.sync")}</div>
           )}
 
           {addresses.length === 0 ? (
             <div className="card" style={{ padding: ".9rem" }}>
-              Адресов нет. Нажмите <b>«Добавить адрес»</b>, чтобы создать первый.
+              {t("address.empty")}
             </div>
           ) : (
             <div className={styles.addrList}>
@@ -311,22 +316,25 @@ function ProfileAuthed() {
                 <article key={a.id} className={`${styles.addrCard}`}>
                   <div className={styles.addrTop}>
                     <div className={styles.addrLines}>
-                      {addrToLines(a).map((ln, i) => <div key={i}>{ln}</div>)}
+                      {addrToLines(a, {
+                        postfiliale: t("address.packType.postfiliale"),
+                        packstation: t("address.packType.packstation"),
+                      }).map((ln, i) => <div key={i}>{ln}</div>)}
                       {a.phone && <div className={styles.muted}>{a.phone}</div>}
                       {a.note && <div className={styles.muted}>{a.note}</div>}
                       {a.packType && a.postNummer && (
-                        <div className={styles.muted}>Postnummer: {a.postNummer}</div>
+                        <div className={styles.muted}>{t("address.pack.postNumber")}: {a.postNummer}</div>
                       )}
                     </div>
                     <div className={styles.addrBadges}>
-                      {a.isDefault && <span className="badge">По умолчанию</span>}
+                      {a.isDefault && <span className="badge">{t("address.default")}</span>}
                     </div>
                   </div>
 
                   <div className={styles.addrActions}>
-                    {!a.isDefault && <button className="btn" onClick={() => setDefault(a.id)} disabled={addrLoading}>Сделать основным</button>}
-                    <button className="btn" onClick={() => startEdit(a)} disabled={addrLoading}>Редактировать</button>
-                    <button className="btn" onClick={() => removeAddress(a.id)} disabled={addrLoading}>Удалить</button>
+                    {!a.isDefault && <button className="btn" onClick={() => setDefault(a.id)} disabled={addrLoading}>{t("address.makeDefault")}</button>}
+                    <button className="btn" onClick={() => startEdit(a)} disabled={addrLoading}>{t("address.edit")}</button>
+                    <button className="btn" onClick={() => removeAddress(a.id)} disabled={addrLoading}>{t("address.delete")}</button>
                   </div>
                 </article>
               ))}
@@ -336,7 +344,7 @@ function ProfileAuthed() {
           {showForm && (
             <form className={`card ${styles.form}`} onSubmit={submitAddress}>
               <div className={styles.formHead}>
-                <h3>{editingId ? "Редактировать адрес" : "Новый адрес"}</h3>
+                <h3>{editingId ? t("address.editTitle") : t("address.newTitle")}</h3>
                 {!editingId && addresses.length > 0 && (
                   <label className={styles.checkInline}>
                     <input
@@ -344,84 +352,84 @@ function ProfileAuthed() {
                       checked={!!draft.isDefault}
                       onChange={(e) => setDraft((d: Address) => ({ ...d, isDefault: e.target.checked }))}
                     />
-                    <span>Сделать адресом по умолчанию</span>
+                    <span>{t("address.setAsDefault")}</span>
                   </label>
                 )}
               </div>
 
               <div className={styles.twoCols}>
                 <label className={styles.field}>
-                  <span>Имя (Vorname)</span>
+                  <span>{t("address.firstName")}</span>
                   <input className="input" value={draft.firstName} onChange={e => setDraft((d: Address) => ({ ...d, firstName: e.target.value }))} required />
                 </label>
                 <label className={styles.field}>
-                  <span>Фамилия (Nachname)</span>
+                  <span>{t("address.lastName")}</span>
                   <input className="input" value={draft.lastName} onChange={e => setDraft((d: Address) => ({ ...d, lastName: e.target.value }))} required />
                 </label>
               </div>
 
               <div className={styles.twoCols}>
                 <label className={styles.field}>
-                  <span>Улица (Straße)</span>
+                  <span>{t("address.street")}</span>
                   <input className="input" value={draft.street} onChange={e => setDraft((d: Address) => ({ ...d, street: e.target.value }))} />
                 </label>
                 <label className={styles.field}>
-                  <span>Дом (Hausnummer)</span>
+                  <span>{t("address.house")}</span>
                   <input className="input" value={draft.house} onChange={e => setDraft((d: Address) => ({ ...d, house: e.target.value }))} />
                 </label>
               </div>
 
               <div className={styles.twoCols}>
                 <label className={styles.field}>
-                  <span>PLZ</span>
+                  <span>{t("address.zip")}</span>
                   <input className="input" value={draft.zip} onChange={e => setDraft((d: Address) => ({ ...d, zip: e.target.value }))} inputMode="numeric" pattern="\d{5}" required />
                 </label>
                 <label className={styles.field}>
-                  <span>Город (Ort)</span>
+                  <span>{t("address.city")}</span>
                   <input className="input" value={draft.city} onChange={e => setDraft((d: Address) => ({ ...d, city: e.target.value }))} required />
                 </label>
               </div>
 
               <div className={styles.twoCols}>
                 <label className={styles.field}>
-                  <span>Телефон</span>
+                  <span>{t("address.phone")}</span>
                   <input className="input" value={draft.phone || ""} onChange={e => setDraft((d: Address) => ({ ...d, phone: e.target.value }))} placeholder="+49 ..." />
                 </label>
                 <label className={styles.field}>
-                  <span>Комментарий</span>
-                  <input className="input" value={draft.note || ""} onChange={e => setDraft((d: Address) => ({ ...d, note: e.target.value }))} placeholder="Подъезд, этаж, код..." />
+                  <span>{t("address.note")}</span>
+                  <input className="input" value={draft.note || ""} onChange={e => setDraft((d: Address) => ({ ...d, note: e.target.value }))} placeholder={t("order.return.commentPh")} />
                 </label>
               </div>
 
               <div className={`card ${styles.packCard}`}>
-                <div className={styles.packTitle}>DHL Packstation / Postfiliale (опционально)</div>
+                <div className={styles.packTitle}>{t("address.pack.title")}</div>
                 <div className={styles.twoCols}>
                   <label className={styles.field}>
-                    <span>Тип пункта</span>
+                    <span>{t("address.pack.type")}</span>
                     <select className="input" value={draft.packType || ""} onChange={e => setDraft((d: Address) => ({ ...d, packType: e.target.value as any }))}>
                       <option value="">—</option>
-                      <option value="packstation">Packstation</option>
-                      <option value="postfiliale">Postfiliale</option>
+                      <option value="packstation">{t("address.packType.packstation")}</option>
+                      <option value="postfiliale">{t("address.packType.postfiliale")}</option>
                     </select>
                   </label>
                   <label className={styles.field}>
-                    <span>Postnummer</span>
+                    <span>{t("address.pack.postNumber")}</span>
                     <input className="input" value={draft.postNummer || ""} onChange={e => setDraft((d: Address) => ({ ...d, postNummer: e.target.value }))} />
                   </label>
                 </div>
                 <div className={styles.twoCols}>
                   <label className={styles.field}>
-                    <span>{draft.packType === "postfiliale" ? "Filiale Nr" : "Packstation Nr"}</span>
+                    <span>{draft.packType === "postfiliale" ? t("address.pack.stationNrFiliale") : t("address.pack.stationNrPack")}</span>
                     <input className="input" value={draft.stationNr || ""} onChange={e => setDraft((d: Address) => ({ ...d, stationNr: e.target.value }))} />
                   </label>
                   <div />
                 </div>
-                <div className={styles.packHint}>Эти поля нужны, если хотите доставку в пункт выдачи.</div>
+                <div className={styles.packHint}>{t("address.pack.hint")}</div>
               </div>
 
               <div className={styles.formActions}>
-                <button className="btn" type="button" onClick={cancelForm} disabled={addrLoading}>Отмена</button>
-                <button className="btn btnPrimary" type="submit" disabled={addrLoading}>{editingId ? "Сохранить" : "Добавить"}</button>
+                <button className="btn" type="button" onClick={cancelForm} disabled={addrLoading}>{t("common.cancel")}</button>
+                <button className="btn btnPrimary" type="submit" disabled={addrLoading}>{editingId ? t("form.save") : t("common.add")}</button>
               </div>
             </form>
           )}
@@ -433,7 +441,7 @@ function ProfileAuthed() {
         <div className={styles.ordersWrap}>
           {orders.length === 0 ? (
             <div className="card" style={{ padding: ".9rem" }}>
-              Заказов пока нет. <Link to="/catalog">Перейти в каталог</Link>
+              {t("orders.empty")} <Link to="/catalog">{t("orders.goCatalog")}</Link>
             </div>
           ) : (
             <div className={styles.orderList}>
@@ -442,14 +450,14 @@ function ProfileAuthed() {
                 return (
                   <article key={o.id} className={`card ${styles.orderCard}`}>
                     <header className={styles.orderHead}>
-                      <div>Заказ <b>{o.id.slice(0, 8)}</b></div>
+                      <div>{t("order.titleShort")} <b>{o.id.slice(0, 8)}</b></div>
                       <div className={styles.orderBadges}>
-                        <span className="badge">{new Date(o.createdAt).toLocaleString("de-DE")}</span>
+                        <span className="badge">{new Date(o.createdAt).toLocaleString(dateLocale)}</span>
                         {o.payment?.status === "paid"
-                          ? <span className="badge" title={`•••• ${o.payment?.last4 || ""}`}>Оплачено</span>
-                          : <span className="badge">Ожидает оплаты</span>}
+                          ? <span className="badge" title={`•••• ${o.payment?.last4 || ""}`}>{t("order.paid")}</span>
+                          : <span className="badge">{t("order.awaitingPayment")}</span>}
                         <span className={`${styles.statusBadge} badge`} data-variant={BADGES[st] || "info"}>
-                          {statusLabel[st]}
+                          {statusLabel(st)}
                         </span>
                       </div>
                     </header>
@@ -464,7 +472,7 @@ function ProfileAuthed() {
                             </div>
                             <div>
                               <div className={styles.itemTitle}>{i.title}</div>
-                              <Link to={`/product/${i.slug}`}>Открыть товар</Link>
+                              <Link to={`/product/${i.slug}`}>{t("order.openProduct")}</Link>
                             </div>
                           </div>
                           <div className={styles.itemQty}>×{i.qty}</div>
@@ -475,19 +483,19 @@ function ProfileAuthed() {
 
                     <div className="hr" />
                     <div className={styles.totalRow}>
-                      <span>Итого</span>
+                      <span>{t("order.total")}</span>
                       <b>{fmtEUR((o as any)._total)}</b>
                     </div>
 
                     <div className={styles.orderActions}>
                       {canCancel(o as any) && (
                         <button className="btn" onClick={() => cancelOrder(o as any)}>
-                          Отменить заказ
+                          {t("order.cancel")}
                         </button>
                       )}
                       {canRequestReturn(o as any) && (
                         <button className="btn" onClick={() => openReturnForm(o as any)}>
-                          Запросить возврат
+                          {t("order.return")}
                         </button>
                       )}
                     </div>
@@ -496,36 +504,36 @@ function ProfileAuthed() {
                       <form className={styles.returnForm} onSubmit={submitReturn}>
                         <div className={styles.twoCols}>
                           <label className={styles.field}>
-                            <span>Причина</span>
+                            <span>{t("order.return.reason")}</span>
                             <select
                               className="input"
                               value={retReason}
                               onChange={(e) => setRetReason(e.target.value)}
                               required
                             >
-                              <option value="">— выберите причину —</option>
-                              <option value="not_fit">Не подошёл / не понравился</option>
-                              <option value="defect">Брак / повреждение</option>
-                              <option value="wrong">Неверный товар</option>
-                              <option value="other">Другое</option>
+                              <option value="">{t("order.return.select")}</option>
+                              <option value="not_fit">{t("order.return.reason.not_fit")}</option>
+                              <option value="defect">{t("order.return.reason.defect")}</option>
+                              <option value="wrong">{t("order.return.reason.wrong")}</option>
+                              <option value="other">{t("order.return.reason.other")}</option>
                             </select>
                           </label>
                           <label className={styles.field}>
-                            <span>Комментарий (необязательно)</span>
+                            <span>{t("order.return.commentOpt")}</span>
                             <input
                               className="input"
                               value={retComment}
                               onChange={(e) => setRetComment(e.target.value)}
-                              placeholder="Опишите детали, если нужно"
+                              placeholder={t("order.return.commentPh")}
                             />
                           </label>
                         </div>
                         <div className={styles.formActions}>
-                          <button type="button" className="btn" onClick={() => setReturnForId(null)}>Отмена</button>
-                          <button type="submit" className="btn btnPrimary">Отправить запрос</button>
+                          <button type="button" className="btn" onClick={() => setReturnForId(null)}>{t("common.cancel")}</button>
+                          <button type="submit" className="btn btnPrimary">{t("order.return.submit")}</button>
                         </div>
                         <div className={styles.hint}>
-                          После подтверждения мы пришлём инструкцию по возврату на ваш email.
+                          {t("order.return.hint")}
                         </div>
                       </form>
                     )}
@@ -543,12 +551,13 @@ function ProfileAuthed() {
 /* ================== Обёртка (экспорт) ===================== */
 export default function Profile() {
   const { user, loading } = useAuth();
+  const { t } = useI18n();
 
   if (loading) {
     return (
       <div className="container">
-        <h1>Профиль</h1>
-        <div className="card" style={{ padding: ".9rem" }}>Загружаем профиль…</div>
+        <h1>{t("profile.title")}</h1>
+        <div className="card" style={{ padding: ".9rem" }}>{t("loading.profile")}</div>
       </div>
     );
   }

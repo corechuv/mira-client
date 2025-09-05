@@ -4,9 +4,12 @@ import { useCart } from "@/contexts/CartContext";
 import type { Product } from "@/types";
 import { fmtEUR } from "@/utils/money";
 import { Link } from "react-router-dom";
+import { useI18n } from "@/i18n/I18nContext";
+
 
 export default function ProductCard({ product }: { product: Product }) {
   const { add } = useCart();
+  const { t } = useI18n();
   return (
     <div className={`${styles.card}`}>
       <Link to={`/product/${product.slug}`} className={styles.thumb} aria-label={product.title}>
@@ -25,7 +28,7 @@ export default function ProductCard({ product }: { product: Product }) {
         <div className={styles.bar}>
           <div className={styles.price}>{fmtEUR(product.price)}</div>
           <button className="btn btnPrimary" onClick={() => add(product)}>
-            В корзину
+            {t("btn.addToCart", "В корзину")}
           </button>
         </div>
       </div>

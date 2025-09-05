@@ -5,24 +5,21 @@ import { useCart } from "@/contexts/CartContext";
 import React, { useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import type { PickupLocation } from "@/types/location";
+import { useI18n } from "@/i18n/I18nContext";
 
 const VAT_RATE = 0.19;
 const FREE_THRESHOLD = 49; // €
 const DHL_COST = 4.99;
 const EXPRESS_COST = 12.9;
 
-// sessionStorage ключ для выбранного пункта (подхват на Checkout)
 const PACK_CHOICE_KEY = "pm.packstation.choice.v1";
-
-// простой кэш результатов, чтобы не жечь лимит DHL (500/сутки)
 const LOC_CACHE_KEY = "pm.loc.cache.v1";
 type CacheMap = Record<string, { ts: number; items: PickupLocation[] }>;
 const getCache = (): CacheMap => {
   try { return JSON.parse(localStorage.getItem(LOC_CACHE_KEY) || "{}"); } catch { return {}; }
 };
 const putCache = (k: string, items: PickupLocation[]) => {
-  const map = getCache();
-  map[k] = { ts: Date.now(), items };
+  const map = getCache(); map[k] = { ts: Date.now(), items };
   localStorage.setItem(LOC_CACHE_KEY, JSON.stringify(map));
 };
 
@@ -37,18 +34,13 @@ function addBusinessDays(base: Date, days: number) {
   return d;
 }
 
-function fmtDay(d: Date) {
-  return d.toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "short" });
-}
-function fmtRange(a: Date, b: Date) {
-  if (a.getTime() === b.getTime()) return fmtDay(a);
-  return `${fmtDay(a)} – ${fmtDay(b)}`;
-}
+const localeTag = (l: "ru" | "uk" | "en" | "de") =>
+  l === "ru" ? "ru-RU" : l === "uk" ? "uk-UA" : l === "de" ? "de-DE" : "en-US";
 
 export default function DeliveryInfo({ productPrice }: { productPrice: number }) {
+  const { t, locale } = useI18n();
   const { total } = useCart();
 
-  // ---- расчёт доставки, как было ----
   const [qty, setQty] = useState<number>(1);
   const inc = () => setQty(q => Math.min(99, q + 1));
   const dec = () => setQty(q => Math.max(1, q - 1));
@@ -72,7 +64,9 @@ export default function DeliveryInfo({ productPrice }: { productPrice: number })
   const paketEnd = addBusinessDays(now, 3);
   const expressDay = addBusinessDays(now, 1);
 
-  // ---- НОВОЕ: поиск DHL Packstation / Postfiliale ----
+  const fmtDay = (d: Date) => d.toLocaleDateString(localeTag(locale), { weekday: "short", day: "numeric", month: "short" });
+  const fmtRange = (a: Date, b: Date) => (a.getTime() === b.getTime() ? fmtDay(a) : `${fmtDay(a)} – ${fmtDay(b)}`);
+
   const [zip, setZip] = useState("");
   const [city, setCity] = useState("");
   const [loading, setLoading] = useState(false);
@@ -85,14 +79,14 @@ export default function DeliveryInfo({ productPrice }: { productPrice: number })
     setErr(null); setSavedHint(null);
     const plz = zip.trim();
     const ort = city.trim();
-    if (!/^\d{3,5}$/.test(plz)) { setErr("Введите корректный PLZ (минимум 3 цифры)."); return; }
+    if (!/^\d{3,5}$/.test(plz)) { setErr(t("delivery.find.badPlz")); return; }
 
-    // 24h кэш
     const key = `${plz}|${ort}|packstation`;
     const cache = getCache();
     const cached = cache[key];
     if (cached && Date.now() - cached.ts < 86400000) {
       setLocations(cached.items);
+      if (!cached.items.length) setErr(t("delivery.find.empty"));
       return;
     }
 
@@ -101,9 +95,9 @@ export default function DeliveryInfo({ productPrice }: { productPrice: number })
       const res = await api.locations.search(plz, ort || undefined, "packstation", 5, 10);
       setLocations(res);
       putCache(key, res);
-      if (!res.length) setErr("Рядом ничего не найдено. Попробуйте другой PLZ/город.");
+      if (!res.length) setErr(t("delivery.find.empty"));
     } catch (e: any) {
-      setErr(e?.message || "Не удалось получить пункты DHL.");
+      setErr(e?.message || t("delivery.find.error"));
     } finally {
       setLoading(false);
     }
@@ -121,44 +115,49 @@ export default function DeliveryInfo({ productPrice }: { productPrice: number })
         city: loc.city,
         savedAt: new Date().toISOString(),
       }));
-      setSavedHint(`Сохранено: ${loc.name}${loc.packstationNumber ? ` №${loc.packstationNumber}` : ""}, ${[loc.street, loc.houseNo].filter(Boolean).join(" ")}, ${loc.zip} ${loc.city}. Откройте «Оформление», чтобы выбрать этот пункт.`);
+      setSavedHint(
+        `${t("delivery.find.savedPrefix")} ${loc.name}${loc.packstationNumber ? ` №${loc.packstationNumber}` : ""}, ${[loc.street, loc.houseNo].filter(Boolean).join(" ")}, ${loc.zip} ${loc.city}. ${t("delivery.find.openCheckoutHint")}`
+      );
     } catch { /* ignore */ }
   };
 
   return (
     <section className={`${styles.card}`}>
       <div className={styles.head}>
-        <h3>Доставка и оплата</h3>
+        <h3>{t("delivery.title")}</h3>
         <div className={styles.qty}>
-          <span className={styles.qtyLabel}>Расчёт для</span>
+          <span className={styles.qtyLabel}>{t("delivery.calcFor")}</span>
           <div className={styles.qtyCtrl}>
-            <button style={{border: 'none', background: 'none'}} className="btn" onClick={dec} aria-label="Уменьшить">−</button>
+            <button style={{ border: 'none', background: 'none' }} className="btn" onClick={dec} aria-label={t("delivery.qty.dec")}>−</button>
             <input
               className={styles.qtyInput}
               value={qty}
               onChange={(e) => onQtyInput(e.target.value)}
               inputMode="numeric"
-              aria-label="Количество"
+              aria-label={t("delivery.qty.label")}
             />
-            <button style={{border: 'none', background: 'none'}} className="btn" onClick={inc} aria-label="Увеличить">+</button>
+            <button style={{ border: 'none', background: 'none' }} className="btn" onClick={inc} aria-label={t("delivery.qty.inc")}>+</button>
           </div>
         </div>
       </div>
 
-      {/* Варианты доставки — компактным списком */}
-      <ul className={styles.shipList} aria-label="Варианты доставки">
+      <ul className={styles.shipList} aria-label={t("delivery.ship.optionsAria")}>
         <li className={styles.row}>
           <div className={styles.left}>
             <div className={styles.title}>DHL Paket</div>
-            <div className={styles.sub}>2–3 Werktage • {fmtRange(paketStart, paketEnd)}</div>
+            <div className={styles.sub}>{t("delivery.paket.sub")} • {fmtRange(paketStart, paketEnd)}</div>
           </div>
           <div className={styles.right}>
             <b className={leftToFree === 0 ? styles.free : undefined}>{fmtEUR(dhlCost)}</b>
             <div className={styles.note}>
               {leftToFree === 0 ? (
-                <span className={styles.freeBadge}>Бесплатная доставка</span>
+                <span className={styles.freeBadge}>{t("delivery.freeBadge")}</span>
               ) : (
-                <>Бесплатно от {fmtEUR(FREE_THRESHOLD)} · не хватает {fmtEUR(leftToFree)}</>
+                <>
+                  {t("delivery.freeLine")
+                    .replace("{threshold}", fmtEUR(FREE_THRESHOLD))
+                    .replace("{left}", fmtEUR(leftToFree))}
+                </>
               )}
             </div>
           </div>
@@ -167,7 +166,7 @@ export default function DeliveryInfo({ productPrice }: { productPrice: number })
         <li className={styles.row}>
           <div className={styles.left}>
             <div className={styles.title}>DHL Express</div>
-            <div className={styles.sub}>1 Werktag • {fmtDay(expressDay)}</div>
+            <div className={styles.sub}>{t("delivery.express.sub")} • {fmtDay(expressDay)}</div>
           </div>
           <div className={styles.right}><b>{fmtEUR(EXPRESS_COST)}</b></div>
         </li>
@@ -175,15 +174,19 @@ export default function DeliveryInfo({ productPrice }: { productPrice: number })
         <li className={styles.row}>
           <div className={styles.left}>
             <div className={styles.title}>DHL Packstation / Postfiliale</div>
-            <div className={styles.sub}>самовывоз • {fmtRange(paketStart, paketEnd)}</div>
+            <div className={styles.sub}>{t("delivery.pack.pickup")} • {fmtRange(paketStart, paketEnd)}</div>
           </div>
           <div className={styles.right}>
             <b className={leftToFree === 0 ? styles.free : undefined}>{fmtEUR(packstationCost)}</b>
             <div className={styles.note}>
               {leftToFree === 0 ? (
-                <span className={styles.freeBadge}>Бесплатная доставка</span>
+                <span className={styles.freeBadge}>{t("delivery.freeBadge")}</span>
               ) : (
-                <>Бесплатно от {fmtEUR(FREE_THRESHOLD)} · не хватает {fmtEUR(leftToFree)}</>
+                <>
+                  {t("delivery.freeLine")
+                    .replace("{threshold}", fmtEUR(FREE_THRESHOLD))
+                    .replace("{left}", fmtEUR(leftToFree))}
+                </>
               )}
             </div>
           </div>
@@ -191,24 +194,23 @@ export default function DeliveryInfo({ productPrice }: { productPrice: number })
 
         <li className={styles.row}>
           <div className={styles.left}>
-            <div className={styles.title}>Самовывоз (Berlin-Mitte)</div>
-            <div className={styles.sub}>сегодня/завтра после подтверждения</div>
+            <div className={styles.title}>{t("delivery.pickup.title")}</div>
+            <div className={styles.sub}>{t("delivery.pickup.sub")}</div>
           </div>
           <div className={styles.right}><b>{fmtEUR(0)}</b></div>
         </li>
       </ul>
 
-      {/* НОВОЕ: быстрый поиск пунктов DHL рядом */}
       <div className="hr" style={{ marginTop: ".75rem" }} />
       <div style={{ marginTop: ".5rem" }}>
-        <div style={{ fontWeight: 600, marginBottom: ".4rem" }}>Найти ближайшую Packstation</div>
+        <div style={{ fontWeight: 600, marginBottom: ".4rem" }}>{t("delivery.find.title")}</div>
         <form onSubmit={findLocations} style={{ display: "grid", gap: ".5rem", gridTemplateColumns: "120px 1fr auto" }}>
           <input className="input" placeholder="PLZ" value={zip} onChange={e => setZip(e.target.value)} inputMode="numeric" />
-          <input className="input" placeholder="Город (опц.)" value={city} onChange={e => setCity(e.target.value)} />
-          <button className="btn">Найти</button>
+          <input className="input" placeholder={t("delivery.find.cityPlaceholder")} value={city} onChange={e => setCity(e.target.value)} />
+          <button className="btn">{t("delivery.find.search")}</button>
         </form>
         {err && <div className="card" style={{ padding: ".6rem", marginTop: ".5rem" }}>{err}</div>}
-        {loading && <div className="card" style={{ padding: ".6rem", marginTop: ".5rem" }}>Ищем ближайшие пункты…</div>}
+        {loading && <div className="card" style={{ padding: ".6rem", marginTop: ".5rem" }}>{t("delivery.find.loading")}</div>}
         {!loading && locations.length > 0 && (
           <ul style={{ listStyle: "none", padding: 0, margin: ".6rem 0 0 0", display: "grid", gap: ".5rem" }}>
             {locations.slice(0, 6).map(loc => (
@@ -222,7 +224,7 @@ export default function DeliveryInfo({ productPrice }: { productPrice: number })
                     {typeof loc.distance === "number" ? ` • ${loc.distance.toFixed(1)} km` : ""}
                   </div>
                 </div>
-                <button className="btn" onClick={() => selectLocation(loc)}>Выбрать</button>
+                <button className="btn" onClick={() => selectLocation(loc)}>{t("delivery.find.choose")}</button>
               </li>
             ))}
           </ul>
@@ -234,35 +236,36 @@ export default function DeliveryInfo({ productPrice }: { productPrice: number })
         )}
       </div>
 
-      {/* Информация — списком */}
       <ul className={styles.infoList}>
         <li>
           <span className={styles.icon} aria-hidden />
           <div>
-            <div className={styles.infoTitle}>НДС (MwSt)</div>
+            <div className={styles.infoTitle}>{t("delivery.info.vat.title")}</div>
             <div className={styles.infoText}>
-              Цена включает 19% НДС. Для {qty} шт: ≈ <b>{fmtEUR(vatForItem * qty)}</b>.
+              {t("delivery.info.vat.text")
+                .replace("{qty}", String(qty))
+                .replace("{amount}", fmtEUR(vatForItem * qty))}
             </div>
           </div>
         </li>
         <li>
           <span className={styles.icon} aria-hidden />
           <div>
-            <div className={styles.infoTitle}>Оплата</div>
-            <div className={styles.infoText}>Klarna, Visa, Mastercard, Amazon Pay</div>
+            <div className={styles.infoTitle}>{t("delivery.info.pay.title")}</div>
+            <div className={styles.infoText}>{t("delivery.info.pay.text")}</div>
           </div>
         </li>
         <li>
           <span className={styles.icon} aria-hidden />
           <div>
-            <div className={styles.infoTitle}>Возврат</div>
-            <div className={styles.infoText}>14 дней. Товары без следов использования и в оригинальной упаковке.</div>
+            <div className={styles.infoTitle}>{t("delivery.info.return.title")}</div>
+            <div className={styles.infoText}>{t("delivery.info.return.text")}</div>
           </div>
         </li>
       </ul>
 
       <p className={styles.hint}>
-        Способ и стоимость доставки выбираются на шаге <b>Оформление</b>. Итог зависит от состава заказа.
+        {t("delivery.hint")}
       </p>
     </section>
   );

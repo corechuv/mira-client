@@ -6,6 +6,7 @@ import { products as seed } from "@/data/products";
 import { useProducts } from "@/contexts/ProductsContext";
 import { Link, navigate } from "@/router/Router";
 import Icon from "./Icon";
+import { useI18n } from "@/i18n/I18nContext";
 
 type Props = {
   isOpen: boolean;
@@ -28,28 +29,25 @@ const fmtEUR = (n: number) =>
   n.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
 
 export default function SearchOverlay({ isOpen, onClose, initialQuery = "" }: Props) {
-  // не монтируем в DOM, если закрыт
   if (!isOpen) return null;
 
+  const { t } = useI18n();
   const { setSearch, setFilterPath } = useProducts();
   const [q, setQ] = useState(initialQuery);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
-  // автофокус и установка стартового значения
   useEffect(() => {
     setQ(initialQuery || "");
     const id = requestAnimationFrame(() => inputRef.current?.focus());
     return () => cancelAnimationFrame(id);
   }, [initialQuery]);
 
-  // ESC для закрытия
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  // блок скролла (надёжно: html + body) и корректный откат
   useEffect(() => {
     const html = document.documentElement;
     const body = document.body;
@@ -77,17 +75,18 @@ export default function SearchOverlay({ isOpen, onClose, initialQuery = "" }: Pr
   }, [q]);
 
   const openAll = () => {
-    setFilterPath([]); // сбрасываем путь
-    setSearch(q);      // прокидываем поисковый текст
+    setFilterPath([]);
+    setSearch(q);
     onClose();
     navigate("/catalog");
   };
 
+  const trendKeys = ["vitamins", "omega3", "care", "gels"] as const;
+
   const content = (
-    <div className={styles.root} role="dialog" aria-modal="true" aria-label="Поиск по каталогу">
+    <div className={styles.root} role="dialog" aria-modal="true" aria-label={t("search.overlay.aria")}>
       <div className={styles.backdrop} onClick={onClose} />
 
-      {/* сцена: хиро (адаптивная высота) + скроллируемые результаты */}
       <div className={styles.stage}>
         {/* HERO */}
         <section className={styles.hero}>
@@ -97,46 +96,51 @@ export default function SearchOverlay({ isOpen, onClose, initialQuery = "" }: Pr
                 <input
                   ref={inputRef}
                   className={styles.searchInput + " input"}
-                  placeholder="Поиск по товарам…"
+                  placeholder={t("search.input.placeholder")}
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
-                  aria-label="Поиск"
+                  aria-label={t("search.input.aria")}
                 />
                 {!!q && (
                   <div
                     className={styles.clearBtn}
                     onClick={() => setQ("")}
-                    aria-label="Очистить"
+                    aria-label={t("search.clear")}
+                    role="button"
                   >
                     <Icon name="close" size="1.1rem" />
                   </div>
                 )}
               </div>
 
-              <button type="submit" className="btn btnPrimary">Все результаты</button>
+              <button type="submit" className="btn btnPrimary">{t("search.allResults")}</button>
             </form>
 
             {/* подсказки */}
             <div className={styles.trends}>
-              <span className={styles.trendLabel}>Популярное:</span>
-              {["Витамины", "Omega-3", "Уход", "Gels"].map(t => (
-                <button
-                  key={t}
-                  type="button"
-                  className={styles.trend}
-                  onClick={() => setQ(t)}
-                >
-                  {t}
-                </button>
-              ))}
+              <span className={styles.trendLabel}>{t("search.trending")}</span>
+              {trendKeys.map((k) => {
+                const label = t(`search.trend.${k}`);
+                return (
+                  <button
+                    key={k}
+                    type="button"
+                    className={styles.trend}
+                    onClick={() => setQ(label)}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Кнопка закрытия — не перекрывает инпут */}
+          {/* Кнопка закрытия */}
           <div
             className={styles.closeBtn + ""}
             onClick={onClose}
-            aria-label="Закрыть"
+            aria-label={t("search.close")}
+            role="button"
           >
             <Icon name="close" size="1.8rem" />
           </div>
@@ -147,19 +151,20 @@ export default function SearchOverlay({ isOpen, onClose, initialQuery = "" }: Pr
           <div className={styles.inner}>
             {!q && (
               <div className={styles.hint}>
-                Введите запрос: название товара, категорию или часть описания.
+                {t("search.prompt")}
               </div>
             )}
 
             {q && results.length === 0 && (
               <div className={styles.empty}>
-                Ничего не найдено. <button className="btn" onClick={openAll}>Открыть каталог</button>
+                {t("search.empty")}{" "}
+                <button className="btn" onClick={openAll}>{t("search.openCatalog")}</button>
               </div>
             )}
 
             {results.length > 0 && (
               <>
-                <ul className={styles.list} role="listbox" aria-label="Результаты поиска">
+                <ul className={styles.list} role="listbox" aria-label={t("search.results.aria")}>
                   {results.map(p => (
                     <li key={p.id} className={styles.item}>
                       <Link to={`/product/${p.slug}`} className={styles.itemLink} onClick={onClose}>
@@ -184,7 +189,7 @@ export default function SearchOverlay({ isOpen, onClose, initialQuery = "" }: Pr
 
                 <div className={styles.footerBar}>
                   <button className="btn btnPrimary" onClick={openAll}>
-                    Показать все результаты
+                    {t("search.showAll")}
                   </button>
                 </div>
               </>

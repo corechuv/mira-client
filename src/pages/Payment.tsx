@@ -8,26 +8,24 @@ import { api } from "@/lib/api";
 
 import { loadStripe, Stripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { useI18n } from "@/i18n/I18nContext";
 
 export default function Payment() {
+  const { t } = useI18n();
   const draftRaw = localStorage.getItem("pm.checkoutDraft.v1");
   const draft = draftRaw ? JSON.parse(draftRaw) : null;
 
-  // ① если нет драфта — уходим на checkout
   useEffect(() => {
     if (!draft) navigate("/checkout");
   }, [draft]);
   if (!draft) return null;
 
-  // ② берём ключ из окружения
   const pk = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string | undefined;
 
-  // ③ лениво загружаем Stripe только если ключ есть
   const stripePromise = useMemo<Promise<Stripe | null> | null>(() => {
     return pk ? loadStripe(pk) : null;
   }, [pk]);
 
-  // ④ грузим client_secret (PaymentIntent) с бэка
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
@@ -38,19 +36,17 @@ export default function Payment() {
         const { client_secret } = await api.payments.createIntent(cents, "EUR");
         setClientSecret(client_secret);
       } catch (e: any) {
-        setErr(e?.message || "Не удалось создать платеж.");
+        setErr(e?.message || t("payment.createIntentFailed"));
       }
     })();
   }, []);
 
-  // ⑤ фолбэк, если нет publishable key
   if (!pk) {
     return (
       <div className="container">
-        <h1>Оплата</h1>
+        <h1>{t("payment.title")}</h1>
         <div className="card" style={{ padding: "1rem" }}>
-          Платёжная форма недоступна: не задан <code>VITE_STRIPE_PUBLISHABLE_KEY</code> при сборке.
-          Задайте переменную окружения и пересоберите сайт.
+          {t("payment.formUnavailable")}
         </div>
       </div>
     );
@@ -59,7 +55,7 @@ export default function Payment() {
   if (err) {
     return (
       <div className="container">
-        <h1>Оплата</h1>
+        <h1>{t("payment.title")}</h1>
         <div className="card" style={{ padding: "1rem" }}>{err}</div>
       </div>
     );
@@ -67,8 +63,8 @@ export default function Payment() {
   if (!clientSecret || !stripePromise) {
     return (
       <div className="container">
-        <h1>Оплата</h1>
-        <div className="card" style={{ padding: "1rem" }}>Загружаем платёж…</div>
+        <h1>{t("payment.title")}</h1>
+        <div className="card" style={{ padding: "1rem" }}>{t("payment.loading")}</div>
       </div>
     );
   }
@@ -81,6 +77,7 @@ export default function Payment() {
 }
 
 function PaymentInner({ draft }: { draft: any }) {
+  const { t } = useI18n();
   const { clear } = useCart();
   const stripe = useStripe();
   const elements = useElements();
@@ -100,16 +97,14 @@ function PaymentInner({ draft }: { draft: any }) {
     });
     if (stripeErr) {
       setLoading(false);
-      setError(stripeErr.message || "Платёж отклонён.");
+      setError(stripeErr.message || t("payment.declined"));
       return;
     }
 
     if (paymentIntent?.status === "succeeded") {
-      // попробуем вытащить last4 (если Stripe вернул его в charges)
       const last4 =
         (paymentIntent as any)?.charges?.data?.[0]?.payment_method_details?.card?.last4 || undefined;
 
-      // создаём заказ уже ОПЛАЧЕННЫМ
       try {
         const orderPayload = {
           ...draft,
@@ -117,15 +112,12 @@ function PaymentInner({ draft }: { draft: any }) {
           payment: { method: "card", status: "paid", last4 },
         };
         const created = await api.orders.create(orderPayload);
-
-        // >>> ДОБАВИТЬ: записываем и в локальную историю, чтобы профиль сразу увидел "Оплачено"
         try {
           const KEY = "pm.orders.v1";
           const prev = JSON.parse(localStorage.getItem(KEY) || "[]");
           localStorage.setItem(KEY, JSON.stringify([created, ...prev]));
         } catch { }
       } catch {
-        // офлайн-фолбэк
         const KEY = "pm.orders.v1";
         const prev = JSON.parse(localStorage.getItem(KEY) || "[]");
         const offline = {
@@ -136,44 +128,43 @@ function PaymentInner({ draft }: { draft: any }) {
         localStorage.setItem(KEY, JSON.stringify([offline, ...prev]));
       }
 
-      // очистка: убираем драфт и корзину → на заказы
       localStorage.removeItem("pm.checkoutDraft.v1");
       clear();
       navigate("/profile?tab=orders");
     } else {
       setLoading(false);
-      setError("Платёж не был завершён. Попробуйте ещё раз.");
+      setError(t("payment.notCompleted"));
     }
   };
 
   return (
     <div className="container">
-      <h1>Оплата картой</h1>
+      <h1>{t("payment.payByCardTitle")}</h1>
       <div className={styles.grid}>
         <form className={`card ${styles.form}`} onSubmit={pay}>
-          <div className={styles.sectionTitle}>Данные карты</div>
+          <div className={styles.sectionTitle}>{t("payment.cardDetails")}</div>
           <PaymentElement />
           {error && <div className="error" style={{ marginTop: ".75rem" }}>{error}</div>}
           <button className="btn btnPrimary" type="submit" disabled={!stripe || loading} style={{ marginTop: "1rem" }}>
-            {loading ? "Обработка…" : `Оплатить ${fmtEUR(sum.grand)}`}
+            {loading ? t("payment.processing") : t("payment.pay").replace("{amount}", fmtEUR(sum.grand))}
           </button>
         </form>
 
         <aside className={"card " + styles.aside}>
-          <div className={styles.title}>Итог заказа</div>
-          <div className={styles.row}><span>Товары</span><b>{fmtEUR(sum.subtotal)}</b></div>
-          <div className={styles.row}><span>Доставка</span><b>{fmtEUR(sum.shipping)}</b></div>
+          <div className={styles.title}>{t("payment.orderSummary")}</div>
+          <div className={styles.row}><span>{t("payment.items")}</span><b>{fmtEUR(sum.subtotal)}</b></div>
+          <div className={styles.row}><span>{t("payment.shipping")}</span><b>{fmtEUR(sum.shipping)}</b></div>
           <div className="hr" />
-          <div className={styles.rowBig}><span>К оплате</span><b>{fmtEUR(sum.grand)}</b></div>
-          <div className={styles.vatNote}>Включая НДС 19%: {fmtEUR(sum.vatIncluded)}</div>
+          <div className={styles.rowBig}><span>{t("payment.toPay")}</span><b>{fmtEUR(sum.grand)}</b></div>
+          <div className={styles.vatNote}>{t("payment.vatIncluded").replace("{amount}", fmtEUR(sum.vatIncluded))}</div>
           <div className="hr" />
-          <div className={styles.title}>Доставка</div>
+          <div className={styles.title}>{t("checkout.shipping")}</div>
           <div className={styles.small}>
-            {draft.shipping.method === "pickup" && "Самовывоз — Berlin-Mitte"}
-            {draft.shipping.method === "dhl" && "DHL Paket"}
-            {draft.shipping.method === "express" && "DHL Express"}
+            {draft.shipping.method === "pickup" && t("payment.method.pickup")}
+            {draft.shipping.method === "dhl" && t("payment.method.dhl")}
+            {draft.shipping.method === "express" && t("payment.method.express")}
             {draft.shipping.method === "packstation" &&
-              (draft.shipping.packType === "packstation" ? "DHL Packstation" : "DHL Postfiliale")}
+              (draft.shipping.packType === "packstation" ? t("payment.method.packstation") : t("payment.method.postfiliale"))}
           </div>
         </aside>
       </div>

@@ -10,6 +10,8 @@ import Icon from "./Icon";
 import SearchOverlay from "./SearchOverlay";
 import LogoMark from "./Logo/LogoMark";
 
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+
 export default function Header() {
   const { totalQty } = useCart();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -24,6 +26,7 @@ export default function Header() {
           </Link>
 
           <nav className={styles.nav} aria-label="Навигация">
+            <LanguageSwitcher />
             <button
               className={styles.btnIcon}
               onClick={() => setSearchOpen(true)}

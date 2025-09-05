@@ -12,5 +12,7 @@ dist/
 .vscode/
 
 recovery.txt
+recovery_1.txt
+recovery_2.txt
 schema.sql
 seed.sql

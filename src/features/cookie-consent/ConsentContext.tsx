@@ -1,3 +1,4 @@
+// src/features/cookie-consent/ConsentContext.tsx
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { getCookie, setCookie } from "../../lib/cookies";
 

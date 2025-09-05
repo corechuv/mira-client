@@ -13,7 +13,7 @@ import {
   createAddress as createAddressSrv,
 } from "@/utils/addresses";
 import type { Address, PackType, ShipMethod } from "@/types";
-import { api } from "@/lib/api";
+import { useI18n } from "@/i18n/I18nContext";
 
 const FREE_THRESHOLD = 49; // € — бесплатная доставка DHL/Packstation от этой суммы
 const VAT_RATE = 0.19;
@@ -34,6 +34,7 @@ function calcShipping(method: ShipMethod, subtotal: number) {
 }
 
 export default function Checkout() {
+  const { t } = useI18n();
   const { items, total } = useCart();
   const { user } = useAuth();
 
@@ -41,7 +42,6 @@ export default function Checkout() {
   const [addresses, setAddresses] = useState<Address[]>(loadAddresses);
   const defaultAddr = addresses.find(a => a.isDefault) ?? addresses[0] ?? null;
 
-  // синхронизируем с бэком при монтировании
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -51,21 +51,18 @@ export default function Checkout() {
     return () => { mounted = false; };
   }, []);
 
-  // способ доставки
   const [shipMethod, setShipMethod] = useState<ShipMethod>(() => {
     const list = loadAddresses();
     const d = list.find(a => a.isDefault) ?? list[0];
     return d?.packType ? "packstation" : "dhl";
   });
 
-  // режим адреса
   const [addrMode, setAddrMode] = useState<"book" | "manual">(addresses.length ? "book" : "manual");
   const [selectedId, setSelectedId] = useState<string | null>(defaultAddr?.id ?? null);
 
-  // совместимые адреса
   const compatibleAddresses = useMemo(() => {
     if (shipMethod === "packstation") return addresses.filter(a => !!a.packType);
-    if (shipMethod === "pickup") return []; // адрес не нужен
+    if (shipMethod === "pickup") return [];
     return addresses.filter(a => !a.packType);
   }, [addresses, shipMethod]);
 
@@ -78,13 +75,12 @@ export default function Checkout() {
   }, [addresses, selectedId, shipMethod]);
 
   useEffect(() => {
-    if (shipMethod === "pickup") return; // адрес не нужен
+    if (shipMethod === "pickup") return;
     if (selectedAddr) return;
     const first = compatibleAddresses[0];
     if (first) setSelectedId(first.id);
   }, [shipMethod, compatibleAddresses, selectedAddr]);
 
-  // суммы
   const subtotal = total;
   const shipCost = useMemo(() => calcShipping(shipMethod, subtotal), [shipMethod, subtotal]);
   const grand = subtotal + shipCost;
@@ -110,13 +106,11 @@ export default function Checkout() {
   const [extra, setExtra] = useState("");
   const [agree, setAgree] = useState(true);
 
-  // флаги сохранения
   const firstAddress = addresses.length === 0;
   const [saveToBook, setSaveToBook] = useState<boolean>(firstAddress);
   const [makeDefault, setMakeDefault] = useState<boolean>(firstAddress);
   const [savedFlash, setSavedFlash] = useState(false);
 
-  // валидность ручного адреса
   const isManualValid = useMemo(() => {
     if (shipMethod === "packstation") {
       return !!postNummer && !!stationNr && /^\d{5}$/.test(zip) && city.trim().length > 0;
@@ -126,11 +120,10 @@ export default function Checkout() {
   }, [shipMethod, postNummer, stationNr, zip, city, street, house]);
 
   const eta =
-    shipMethod === "express" ? "1 Werktag"
-      : shipMethod === "pickup" ? "Сразу после подтверждения (самовывоз)"
-        : "2–3 Werktage";
+    shipMethod === "express" ? t("eta.express")
+      : shipMethod === "pickup" ? t("eta.pickup")
+        : t("eta.standard");
 
-  // единый билдер нового адреса из ручных полей
   const buildManualAddress = (): Address => {
     const id = crypto.randomUUID();
     if (shipMethod === "packstation") {
@@ -156,11 +149,10 @@ export default function Checkout() {
     };
   };
 
-  // ЯВНОЕ сохранение адреса (без перехода к оплате)
   const saveManualNow = async () => {
     if (!saveToBook) return;
     if (!isManualValid) {
-      alert("Проверьте обязательные поля адреса.");
+      alert(t("alert.checkRequired"));
       return;
     }
     const newAddr = buildManualAddress();
@@ -175,15 +167,14 @@ export default function Checkout() {
       setSavedFlash(true);
       setTimeout(() => setSavedFlash(false), 1600);
     } catch (e: any) {
-      alert(e?.message || "Не удалось сохранить адрес.");
+      alert(e?.message || t("alert.saveAddressFailed"));
     }
   };
 
-  // сабмит — сохраняем драфт и переходим на оплату
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (items.length === 0) return alert("Корзина пуста");
-    if (!agree) return alert("Необходимо согласиться с условиями.");
+    if (items.length === 0) return alert(t("alert.cartEmpty"));
+    if (!agree) return alert(t("alert.mustAgree"));
 
     let addressForDraft:
       | { street: string; house: string; zip: string; city: string; note?: string }
@@ -193,10 +184,10 @@ export default function Checkout() {
     if (shipMethod === "pickup") {
       addressForDraft = { pickup: "Berlin-Mitte, Mon–Sat 10–20" };
     } else if (addrMode === "book") {
-      if (!selectedAddr) return alert("Выберите сохранённый адрес или переключитесь на ввод вручную.");
+      if (!selectedAddr) return alert(t("alert.selectSavedOrManual"));
       if (shipMethod === "packstation") {
         if (!selectedAddr.packType || !selectedAddr.postNummer || !selectedAddr.stationNr || !selectedAddr.zip || !selectedAddr.city) {
-          return alert("Выбранный адрес не подходит для Packstation/Postfiliale.");
+          return alert(t("alert.addrNotSuitablePack"));
         }
         addressForDraft = {
           postNummer: selectedAddr.postNummer!,
@@ -207,7 +198,7 @@ export default function Checkout() {
         };
       } else {
         if (!selectedAddr.street || !selectedAddr.house || !selectedAddr.zip || !selectedAddr.city) {
-          return alert("В сохранённом адресе не заполнены обязательные поля.");
+          return alert(t("alert.savedAddressMissingFields"));
         }
         addressForDraft = {
           street: selectedAddr.street,
@@ -218,7 +209,7 @@ export default function Checkout() {
         };
       }
     } else {
-      if (!isManualValid) return alert("Проверьте обязательные поля адреса.");
+      if (!isManualValid) return alert(t("alert.checkRequired"));
       if (saveToBook) {
         try {
           const newAddr = buildManualAddress();
@@ -266,42 +257,42 @@ export default function Checkout() {
   const freeNote =
     shipMethod === "dhl" || shipMethod === "packstation"
       ? freeLeft > 0
-        ? `Добавьте ещё ${fmtEUR(freeLeft)} для бесплатной доставки`
-        : "У вас бесплатная доставка"
+        ? t("checkout.addMoreForFree").replace("{amount}", fmtEUR(freeLeft))
+        : t("checkout.youHaveFree")
       : null;
 
   return (
     <div className="container">
-      <h1>Оформление заказа</h1>
+      <h1>{t("checkout.title")}</h1>
       <div className={styles.grid}>
         <form className={`card ${styles.form}`} onSubmit={onSubmit}>
-          <h3 className={styles.sectionTitle}>Получатель</h3>
+          <h3 className={styles.sectionTitle}>{t("checkout.recipient")}</h3>
           <div className={styles.twoCols}>
-            <Field label="Имя (Vorname)">
+            <Field label={t("field.firstName")}>
               <input className="input" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
             </Field>
-            <Field label="Фамилия (Nachname)">
+            <Field label={t("field.lastName")}>
               <input className="input" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
             </Field>
           </div>
           <div className={styles.twoCols}>
-            <Field label="Email">
+            <Field label={t("field.email")}>
               <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </Field>
-            <Field label="Телефон (опционально)">
+            <Field label={t("field.phoneOptional")}>
               <input className="input" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+49 ..." />
             </Field>
           </div>
 
-          <h3 className={styles.sectionTitle}>Доставка (Deutschland, DHL)</h3>
+          <h3 className={styles.sectionTitle}>{t("checkout.shippingTitle")}</h3>
 
           <div className={styles.shipOptions + ""}>
             <label className={styles.shipRow}>
               <input type="radio" name="ship" checked={shipMethod === "dhl"} onChange={() => setShipMethod("dhl")} />
               <div className={styles.shipBody}>
-                <div className={styles.shipTitle}>DHL Paket • 2–3 Werktage</div>
+                <div className={styles.shipTitle}>{t("ship.dhl")}</div>
                 <div className={styles.shipMeta}>
-                  {subtotal >= FREE_THRESHOLD ? "Бесплатно от 49 € — у вас бесплатно" : fmtEUR(4.99)} · отслеживание
+                  {subtotal >= FREE_THRESHOLD ? t("ship.freeFrom49WithYouFree") : `${fmtEUR(4.99)} · ${t("ship.tracking")}`}
                 </div>
               </div>
               <div className={styles.shipPrice}>{subtotal >= FREE_THRESHOLD ? fmtEUR(0) : fmtEUR(4.99)}</div>
@@ -310,8 +301,8 @@ export default function Checkout() {
             <label className={styles.shipRow}>
               <input type="radio" name="ship" checked={shipMethod === "express"} onChange={() => setShipMethod("express")} />
               <div className={styles.shipBody}>
-                <div className={styles.shipTitle}>DHL Express • 1 Werktag</div>
-                <div className={styles.shipMeta}>курьер, приоритетная обработка</div>
+                <div className={styles.shipTitle}>{t("ship.express")}</div>
+                <div className={styles.shipMeta}>{t("ship.express.meta")}</div>
               </div>
               <div className={styles.shipPrice}>{fmtEUR(12.9)}</div>
             </label>
@@ -319,9 +310,9 @@ export default function Checkout() {
             <label className={styles.shipRow}>
               <input type="radio" name="ship" checked={shipMethod === "packstation"} onChange={() => setShipMethod("packstation")} />
               <div className={styles.shipBody}>
-                <div className={styles.shipTitle}>DHL Packstation / Postfiliale</div>
+                <div className={styles.shipTitle}>{t("ship.packstation")}</div>
                 <div className={styles.shipMeta}>
-                  {subtotal >= FREE_THRESHOLD ? "Бесплатно" : fmtEUR(4.99)} · забрать в удобное время
+                  {subtotal >= FREE_THRESHOLD ? (t("footer.free") ?? (t("cart.total") && "Бесплатно")) : fmtEUR(4.99)} · {(t("home.recommended") ?? "забрать в удобное время")}
                 </div>
               </div>
               <div className={styles.shipPrice}>{subtotal >= FREE_THRESHOLD ? fmtEUR(0) : fmtEUR(4.99)}</div>
@@ -330,18 +321,17 @@ export default function Checkout() {
             <label className={styles.shipRow}>
               <input type="radio" name="ship" checked={shipMethod === "pickup"} onChange={() => setShipMethod("pickup")} />
               <div className={styles.shipBody}>
-                <div className={styles.shipTitle}>Самовывоз • Berlin-Mitte</div>
-                <div className={styles.shipMeta}>после подтверждения, без очереди</div>
+                <div className={styles.shipTitle}>{t("ship.pickup")}</div>
+                <div className={styles.shipMeta}>{t("ship.pickup.meta")}</div>
               </div>
               <div className={styles.shipPrice}>{fmtEUR(0)}</div>
             </label>
           </div>
 
-          {/* Адрес (кроме самовывоза) */}
           {shipMethod !== "pickup" && (
             <div className={styles.addrBlock}>
               <div className={styles.addrHead}>
-                <h3>Адрес доставки</h3>
+                <h3>{t("checkout.address.title")}</h3>
                 <div className={styles.addrMode}>
                   <label>
                     <input
@@ -351,7 +341,7 @@ export default function Checkout() {
                       onChange={() => setAddrMode("book")}
                       disabled={compatibleAddresses.length === 0}
                     />
-                    <span>Сохранённый</span>
+                    <span>{t("checkout.address.saved")}</span>
                   </label>
                   <label>
                     <input
@@ -360,15 +350,14 @@ export default function Checkout() {
                       checked={addrMode === "manual" || compatibleAddresses.length === 0}
                       onChange={() => setAddrMode("manual")}
                     />
-                    <span>Новый</span>
+                    <span>{t("checkout.address.new")}</span>
                   </label>
                 </div>
               </div>
 
-              {/* Сохранённый адрес */}
               {addrMode === "book" && compatibleAddresses.length > 0 && (
                 <>
-                  <Field label="Выберите адрес">
+                  <Field label={t("checkout.address.choose")}>
                     <select
                       className="input"
                       value={selectedId || ""}
@@ -376,7 +365,7 @@ export default function Checkout() {
                     >
                       {compatibleAddresses.map(a => (
                         <option key={a.id} value={a.id}>
-                          {addrLabel(a)}{a.isDefault ? " — основной" : ""}
+                          {addrLabel(a)}{a.isDefault ? t("address.primarySuffix") : ""}
                         </option>
                       ))}
                     </select>
@@ -403,81 +392,86 @@ export default function Checkout() {
                           {selectedAddr.note && <div className={styles.muted}>{selectedAddr.note}</div>}
                         </div>
                         <div className={styles.previewActions}>
-                          <Link to="/profile?tab=address" className="btn">Управлять адресами</Link>
+                          <Link to="/profile?tab=address" className="btn">{t("checkout.address.manage")}</Link>
                         </div>
                       </div>
                     </div>
                   ) : (
                     <div className="card" style={{ padding: ".7rem" }}>
-                      Нет подходящего адреса. Переключитесь на «Новый» или добавьте адрес в <Link to="/profile?tab=address">профиле</Link>.
+                      {t("checkout.address.noSuitable")}{" "}
+                      <Link to="/profile?tab=address">{t("checkout.address.manage")}</Link>.
                     </div>
                   )}
                 </>
               )}
 
-              {/* Новый адрес + моментальное сохранение */}
               {(addrMode === "manual" || compatibleAddresses.length === 0) && (
                 <>
                   {shipMethod === "packstation" ? (
                     <>
                       <div className={styles.twoCols}>
-                        <Field label="Тип пункта">
+                        <Field label={t("field.pack.type")}>
                           <select className="input" value={packType} onChange={(e) => setPackType(e.target.value as PackType)}>
                             <option value="packstation">Packstation</option>
                             <option value="postfiliale">Postfiliale</option>
                           </select>
                         </Field>
-                        <Field label="Postnummer (DHL Kunden-Nr)">
+                        <Field label={t("field.postnummer")}>
                           <input className="input" value={postNummer} onChange={(e) => setPostNummer(e.target.value)} required />
                         </Field>
                       </div>
                       <div className={styles.twoCols}>
-                        <Field label={packType === "packstation" ? "Packstation Nr" : "Filiale Nr"}>
+                        <Field label={packType === "packstation" ? t("field.packstationNr") : t("field.filialeNr")}>
                           <input className="input" value={stationNr} onChange={(e) => setStationNr(e.target.value)} required />
                         </Field>
-                        <Field label="PLZ">
+                        <Field label={t("field.plz")}>
                           <input className="input" value={zip} onChange={(e) => setZip(e.target.value)} required pattern="\d{5}" />
                         </Field>
                       </div>
-                      <Field label="Город (Ort)">
+                      <Field label={t("field.city")}>
                         <input className="input" value={city} onChange={(e) => setCity(e.target.value)} required />
                       </Field>
                     </>
                   ) : (
                     <>
                       <div className={styles.twoCols}>
-                        <Field label="Улица (Straße)">
+                        <Field label={t("field.street")}>
                           <input className="input" value={street} onChange={(e) => setStreet(e.target.value)} required />
                         </Field>
-                        <Field label="Дом (Hausnummer)">
+                        <Field label={t("field.house")}>
                           <input className="input" value={house} onChange={(e) => setHouse(e.target.value)} required />
                         </Field>
                       </div>
                       <div className={styles.twoCols}>
-                        <Field label="PLZ">
+                        <Field label={t("field.plz")}>
                           <input className="input" value={zip} onChange={(e) => setZip(e.target.value)} required pattern="\d{5}" />
                         </Field>
-                        <Field label="Город (Ort)">
+                        <Field label={t("field.city")}>
                           <input className="input" value={city} onChange={(e) => setCity(e.target.value)} required />
                         </Field>
                       </div>
                     </>
                   )}
 
-                  <Field label="Комментарий для курьера (необязательно)">
-                    <textarea rows={3} value={extra} onChange={(e) => setExtra(e.target.value)} placeholder="Звонить перед доставкой, оставить у соседа и т.п." />
+                  <Field label={t("field.courierNote")}>
+                    <textarea
+                      rows={3}
+                      value={extra}
+                      onChange={(e) => setExtra(e.target.value)}
+                      placeholder={t("placeholder.courierNote")}
+                    />
                   </Field>
 
                   <div className={styles.saveAddressRow}>
                     <label className={styles.check}>
                       <input type="checkbox" checked={saveToBook} onChange={(e) => setSaveToBook(e.target.checked)} />
-                      <span>Сохранить адрес в моих адресах</span>
+                      <span>{t("checkout.saveAddress")}</span>
                     </label>
                     {saveToBook && (
                       <>
                         <label className={styles.check}>
                           <input type="checkbox" checked={makeDefault} onChange={(e) => setMakeDefault(e.target.checked)} />
-                          <span>Сделать основным</span>
+                          <span>{t("checkout.makeDefault")}</span>
                         </label>
                         <div className={styles.manualSaveRow}>
                           <button
@@ -485,11 +479,11 @@ export default function Checkout() {
                             className="btn"
                             onClick={saveManualNow}
                             disabled={!isManualValid}
-                            title={!isManualValid ? "Заполните обязательные поля" : "Сохранит адрес не переходя к оплате"}
+                            title={!isManualValid ? t("checkout.fillRequired") : t("checkout.saveNowTitle")}
                           >
-                            Сохранить адрес сейчас
+                            {t("checkout.saveNow")}
                           </button>
-                          {savedFlash && <span className={styles.okMark}>Сохранено ✓</span>}
+                          {savedFlash && <span className={styles.okMark}>{t("checkout.saved")}</span>}
                         </div>
                       </>
                     )}
@@ -501,28 +495,31 @@ export default function Checkout() {
 
           <label className={styles.agree}>
             <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
-            <span>Я согласен с условиями и политикой возврата.</span>
+            <span>{t("checkout.agree")}</span>
           </label>
 
-          <button className="btn btnPrimary" type="submit">Далее — к оплате</button>
+          <button className="btn btnPrimary" type="submit">{t("checkout.submit")}</button>
         </form>
 
         <aside className={"card " + styles.aside}>
-          <div className={styles.totalRow}><span>Товаров</span><b>{items.length}</b></div>
-          <div className={styles.totalRow}><span>Сумма товаров</span><b>{fmtEUR(subtotal)}</b></div>
-          <div className={styles.totalRow}><span>Доставка ({eta})</span><b>{fmtEUR(shipCost)}</b></div>
+          <div className={styles.totalRow}><span>{t("checkout.itemsCount")}</span><b>{items.length}</b></div>
+          <div className={styles.totalRow}><span>{t("checkout.subtotal")}</span><b>{fmtEUR(subtotal)}</b></div>
+          <div className={styles.totalRow}>
+            <span>{`${t("checkout.shipping")}${eta ? ` (${eta})` : ""}`}</span>
+            <b>{fmtEUR(shipCost)}</b>
+          </div>
           {freeNote && (
             <div className={styles.noteBar} data-good={freeLeft <= 0}>
               {freeNote}
             </div>
           )}
           <div className="hr" />
-          <div className={styles.totalBig}><span>К оплате</span><b>{fmtEUR(grand)}</b></div>
-          <div className={styles.vatNote}>Включая НДС 19%: {fmtEUR(vatIncluded)}</div>
+          <div className={styles.totalBig}><span>{t("checkout.toPay")}</span><b>{fmtEUR(grand)}</b></div>
+          <div className={styles.vatNote}>{t("checkout.vatIncluded").replace("{amount}", fmtEUR(vatIncluded))}</div>
 
           {items.length === 0 && (
             <div className={styles.empty}>
-              Корзина пуста. <Link to="/catalog">Перейти в каталог</Link>
+              {t("cart.empty")}. <Link to="/catalog">{t("home.toCatalog")}</Link>
             </div>
           )}
         </aside>

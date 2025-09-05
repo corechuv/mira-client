@@ -5,10 +5,14 @@ import { useProducts } from "@/contexts/ProductsContext";
 import ProductCard from "@/components/ProductCard";
 import ProductsRail from "@/components/ProductsRail";
 import { products as allProducts } from "@/data/products"; // для длинной ленты
+import { useI18n } from "@/i18n/I18nContext";
+
 
 export default function Home() {
   const { products } = useProducts();
   const top = products.slice(0, 4);
+  const { t } = useI18n();
+
   return (
     <div className="container">
       <section className={styles.hero}>
@@ -21,8 +25,8 @@ export default function Home() {
                 Шо то дописать...
               </p>
               <div className={styles.actions}>
-                <Link to="/catalog" className="btn btnPrimary">В каталог</Link>
-                <Link to="/profile?tab=orders" className="btn">Мои заказы</Link>
+                <Link to="/catalog" className="btn btnPrimary">{t("home.toCatalog", "В каталог")}</Link>
+                <Link to="/profile?tab=orders" className="btn">{t("home.myOrders", "Мои заказы")}</Link>
               </div>
             </div>
           </div>
@@ -33,13 +37,13 @@ export default function Home() {
       <section className={styles.section}>
         <div className={styles.sectionHead}>
         </div>
-        <ProductsRail title="Популярное" items={top} />
+        <ProductsRail title={t("home.popular", "Популярное")} items={top} />
       </section>
 
       <section className={styles.section}>
         <div className={styles.sectionHead}>
         </div>
-        <ProductsRail title="Рекомендуем" items={allProducts} />
+        <ProductsRail title={t("home.recommended", "Рекомендуем")} items={allProducts} />
       </section>
     </div>
   );

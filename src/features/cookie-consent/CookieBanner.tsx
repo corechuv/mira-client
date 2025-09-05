@@ -1,3 +1,4 @@
+// src/features/cookie-consent/CookieBanner.tsx
 import React, { useEffect, useRef, useState } from "react";
 import styles from "./CookieBanner.module.scss";
 import { useConsent } from "./ConsentContext";

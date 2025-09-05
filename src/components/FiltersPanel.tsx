@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import styles from "./FiltersPanel.module.scss";
 import { useProducts, SortKey } from "@/contexts/ProductsContext";
 import { categories } from "@/data/categories";
+import { useI18n } from "@/i18n/I18nContext";
 
 type Props = {
   onApply?: () => void;
@@ -11,10 +12,11 @@ type Props = {
 
 /* ===== Dual range ===== */
 function DualRange({
-  min, max, from, to, onFrom, onTo,
+  min, max, from, to, onFrom, onTo, ariaFrom, ariaTo,
 }: {
   min: number; max: number; from: number; to: number;
   onFrom: (n: number) => void; onTo: (n: number) => void;
+  ariaFrom: string; ariaTo: string;
 }) {
   const [active, setActive] = useState<"from" | "to" | null>(null);
 
@@ -23,7 +25,6 @@ function DualRange({
   const pFrom = pct(from);
   const pTo = pct(to);
 
-  // заливка активного диапазона рисуется фоном обёртки
   const bg = `linear-gradient(to right,
     rgba(255,255,255,.18) 0%,
     rgba(255,255,255,.18) ${pFrom}%,
@@ -41,7 +42,7 @@ function DualRange({
     <div className={styles.rangeWrap} style={{ background: bg }}>
       {/* левая ручка */}
       <input
-        aria-label="Минимальная цена"
+        aria-label={ariaFrom}
         type="range"
         min={min}
         max={max}
@@ -58,7 +59,7 @@ function DualRange({
 
       {/* правая ручка */}
       <input
-        aria-label="Максимальная цена"
+        aria-label={ariaTo}
         type="range"
         min={min}
         max={max}
@@ -78,6 +79,8 @@ function DualRange({
 
 /* ===== Панель фильтров ===== */
 export default function FiltersPanel({ onApply, inModal }: Props) {
+  const { t } = useI18n();
+
   const {
     search, setSearch,
     sort, setSort,
@@ -132,10 +135,10 @@ export default function FiltersPanel({ onApply, inModal }: Props) {
     <div className={styles.panel}>
       {/* Поиск */}
       <label className={styles.field}>
-        <span>Поиск</span>
+        <span>{t("filters.search.label")}</span>
         <input
           className="input"
-          placeholder="Название, описание..."
+          placeholder={t("filters.search.placeholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -143,48 +146,50 @@ export default function FiltersPanel({ onApply, inModal }: Props) {
 
       {/* Категории */}
       <div className={styles.group}>
-        <div className={styles.groupTitle}>Категории</div>
+        <div className={styles.groupTitle}>{t("filters.categories.title")}</div>
 
         <div className={styles.grid2}>
           <label className={styles.field}>
-            <span>Раздел</span>
+            <span>{t("filters.categories.section")}</span>
             <select className="input" value={cat1} onChange={e => onCat1(e.target.value)}>
               <option value="">—</option>
-              {opts1.map(t => <option key={t} value={t}>{t}</option>)}
+              {opts1.map(ti => <option key={ti} value={ti}>{ti}</option>)}
             </select>
           </label>
           <label className={styles.field}>
-            <span>Подраздел</span>
+            <span>{t("filters.categories.subsection")}</span>
             <select className="input" value={cat2} onChange={e => onCat2(e.target.value)} disabled={!cat1}>
               <option value="">—</option>
-              {opts2.map(t => <option key={t} value={t}>{t}</option>)}
+              {opts2.map(ti => <option key={ti} value={ti}>{ti}</option>)}
             </select>
           </label>
         </div>
 
         <label className={styles.field}>
-          <span>Категория</span>
+          <span>{t("filters.categories.category")}</span>
           <select className="input" value={cat3} onChange={e => onCat3(e.target.value)} disabled={!cat2}>
             <option value="">—</option>
-            {opts3.map(t => <option key={t} value={t}>{t}</option>)}
+            {opts3.map(ti => <option key={ti} value={ti}>{ti}</option>)}
           </select>
         </label>
 
         {filterPath.length > 0 && (
           <div className={styles.chips}>
             <span className="badge">{filterPath.join(" / ")}</span>
-            <button type="button" className="btn" onClick={() => setFilterPath([])}>Сбросить путь</button>
+            <button type="button" className="btn" onClick={() => setFilterPath([])}>
+              {t("filters.categories.resetPath")}
+            </button>
           </div>
         )}
       </div>
 
       {/* Цена */}
       <div className={styles.group}>
-        <div className={styles.groupTitle}>Цена, €</div>
+        <div className={styles.groupTitle}>{t("filters.price.title")}</div>
 
         <div className={styles.priceRow}>
           <label className={styles.priceField}>
-            <span>От</span>
+            <span>{t("filters.price.from")}</span>
             <input
               className="input"
               type="number"
@@ -197,7 +202,7 @@ export default function FiltersPanel({ onApply, inModal }: Props) {
             />
           </label>
           <label className={styles.priceField}>
-            <span>До</span>
+            <span>{t("filters.price.to")}</span>
             <input
               className="input"
               type="number"
@@ -218,6 +223,8 @@ export default function FiltersPanel({ onApply, inModal }: Props) {
           to={to}
           onFrom={changeFrom}
           onTo={changeTo}
+          ariaFrom={t("filters.price.minAria")}
+          ariaTo={t("filters.price.maxAria")}
         />
 
         <div className={styles.rangeLabels}>
@@ -228,41 +235,51 @@ export default function FiltersPanel({ onApply, inModal }: Props) {
 
       {/* Рейтинг */}
       <div className={styles.group}>
-        <div className={styles.groupTitle}>Рейтинг</div>
+        <div className={styles.groupTitle}>{t("filters.rating.title")}</div>
         <div className={styles.ratingChips}>
-          <button type="button"
+          <button
+            type="button"
             className={ratingMin === 0 ? styles.chipActive : styles.chip}
             onClick={() => setRatingMin(0)}
-          >Все</button>
-          {[4,3,2].map(n => (
-            <button type="button"
+          >
+            {t("filters.rating.all")}
+          </button>
+          {[4, 3, 2].map(n => (
+            <button
+              type="button"
               key={n}
               className={ratingMin === n ? styles.chipActive : styles.chip}
               onClick={() => setRatingMin(n)}
-            >{n}+</button>
+            >
+              {n}+
+            </button>
           ))}
         </div>
       </div>
 
       {/* Сортировка */}
       <div className={styles.group}>
-        <div className={styles.groupTitle}>Сортировка</div>
+        <div className={styles.groupTitle}>{t("filters.sort.title")}</div>
         <select
           className="input"
           value={sort}
           onChange={(e) => setSort(e.target.value as SortKey)}
         >
-          <option value="popular">Сначала популярные</option>
-          <option value="price-asc">Сначала дешёвые</option>
-          <option value="price-desc">Сначала дорогие</option>
+          <option value="popular">{t("sort.popular")}</option>
+          <option value="price-asc">{t("sort.priceAsc")}</option>
+          <option value="price-desc">{t("sort.priceDesc")}</option>
         </select>
       </div>
 
       {/* Кнопки */}
       <div className={styles.actions}>
-        <button type="button" className="btn" onClick={resetAll}>Сбросить фильтры</button>
+        <button type="button" className="btn" onClick={resetAll}>
+          {t("filters.actions.reset")}
+        </button>
         {inModal && (
-          <button type="button" className="btn btnPrimary" onClick={applyAndClose}>Применить</button>
+          <button type="button" className="btn btnPrimary" onClick={applyAndClose}>
+            {t("filters.actions.apply")}
+          </button>
         )}
       </div>
     </div>

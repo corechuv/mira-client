@@ -4,12 +4,24 @@ import type { Order } from "@/types/order";
 import type { Review } from "@/types";
 import { seedReviews } from "@/data/reviews";
 
+// ---- Locale wiring ----
+type ApiLocale = "ru" | "uk" | "en" | "de";
+let __apiLocale: ApiLocale = "ru";
+export const setApiLocale = (l: ApiLocale) => { __apiLocale = l; };
+
+const withLocale = (path: string) => {
+  if (!__apiLocale) return path;
+  if (/\blocale=/.test(path)) return path;
+  const sep = path.includes("?") ? "&" : "?";
+  return `${path}${sep}locale=${encodeURIComponent(__apiLocale)}`;
+};
+
 function normalizeReview(r: any): Review {
   return {
     id: r.id ?? r.review_id ?? crypto.randomUUID(),
     productId: r.product_id ?? r.productId ?? "",
     author: r.author ?? r.user ?? "Аноним",
-    rating: Number(r.rating ?? 0) as 1|2|3|4|5,
+    rating: Number(r.rating ?? 0) as 1 | 2 | 3 | 4 | 5,
     text: r.text ?? r.body ?? "",
     createdAt: r.created_at ?? r.createdAt ?? new Date().toISOString(),
     helpful: Number(r.helpful ?? r.votes ?? 0),
@@ -102,7 +114,7 @@ async function req<T>(path: string, init: RequestInit = {}) {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 
-  const res = await fetch(API + path, {
+  const res = await fetch(API + withLocale(path), {
     ...init,
     method,
     headers,
@@ -273,7 +285,7 @@ reviews.list = async (productId: string): Promise<Review[]> => {
     }
     return all
       .filter(r => r.productId === productId)
-      .sort((a,b)=> +new Date(b.createdAt) - +new Date(a.createdAt));
+      .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
   }
 };
 
@@ -290,7 +302,7 @@ reviews.add = async ({ productId, author, rating, text }) => {
       id: crypto.randomUUID(),
       productId,
       author: (author || "Аноним").trim(),
-      rating: Math.min(5, Math.max(1, Number(rating))) as 1|2|3|4|5,
+      rating: Math.min(5, Math.max(1, Number(rating))) as 1 | 2 | 3 | 4 | 5,
       text: (text || "").trim(),
       createdAt: new Date().toISOString(),
       helpful: 0,
@@ -349,7 +361,7 @@ export const api = {
   reviews,
 
   locations: {
-    async search(zip: string, city?: string, type: "packstation"|"postfiliale"|"parcelshop" = "packstation", radius = 5, results = 10): Promise<PickupLocation[]> {
+    async search(zip: string, city?: string, type: "packstation" | "postfiliale" | "parcelshop" = "packstation", radius = 5, results = 10): Promise<PickupLocation[]> {
       const qs = `?zip=${encodeURIComponent(zip)}${city ? `&city=${encodeURIComponent(city)}` : ""}&type=${type}&radius=${radius}&results=${results}`;
       const res = await req<any>(`/locations${qs}`);
       const arr = res?.items ?? res ?? [];
