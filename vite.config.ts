@@ -14,5 +14,15 @@ export default defineConfig({
     modules: {
       localsConvention: "camelCaseOnly"
     }
-  }
+  },
+  server: {
+    proxy: {
+      // если бэкенд без префикса /api
+      "/api": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/api/, ""),
+      },
+    },
+  },
 });

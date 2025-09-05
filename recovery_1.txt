@@ -1,0 +1,4853 @@
+// vite.config.ts
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import path from "node:path";
+
+export default defineConfig({
+  plugins: [react()],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src")
+    }
+  },
+  css: {
+    modules: {
+      localsConvention: "camelCaseOnly"
+    }
+  },
+  server: {
+    proxy: {
+      // если бэкенд без префикса /api
+      "/api": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/api/, ""),
+      },
+    },
+  },
+});
+
+// src/vite-env.d.ts
+/// <reference types="vite/client" />
+
+// src/main.tsx
+import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App";
+import { ThemeProvider } from "@/contexts/ThemeContext";
+import "./styles/global.scss";
+
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <ThemeProvider>
+      <App />
+    </ThemeProvider>
+  </React.StrictMode>
+);
+
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#0a0a0a" id="theme-color" />
+    <title>Mira</title>
+    <script>
+      (function () {
+        var KEY = "pm.theme";
+        var DARK = "#0a0a0a";
+        var LIGHT = "#ffffff";
+        try {
+          var t = localStorage.getItem(KEY);
+          if (t !== "light" && t !== "dark") {
+            t = window.matchMedia &&
+                window.matchMedia("(prefers-color-scheme: light)").matches
+                ? "light" : "dark";
+          }
+          document.documentElement.setAttribute("data-theme", t);
+          var meta = document.getElementById("theme-color");
+          if (meta) meta.setAttribute("content", t === "light" ? LIGHT : DARK);
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
+// src/main.tsx
+import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App";
+import { ThemeProvider } from "@/contexts/ThemeContext";
+import "./styles/global.scss";
+
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
+    <ThemeProvider>
+      <App />
+    </ThemeProvider>
+  </React.StrictMode>
+);
+
+// src/App.tsx
+import { CartProvider } from "./contexts/CartContext";
+import { ProductsProvider } from "./contexts/ProductsContext";
+import { AuthProvider } from "./contexts/AuthContext";
+import MainLayout from "./layouts/MainLayout";
+import { Router } from "./router/Router";
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <ProductsProvider>
+        <CartProvider>
+          <MainLayout>
+            <Router />
+          </MainLayout>
+        </CartProvider>
+      </ProductsProvider>
+    </AuthProvider>
+  );
+}
+
+// src/utils/money.ts
+export const fmtEUR = (n: number) =>
+  n.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+
+// src/utils/addresses.ts
+import { api, getToken } from "@/lib/api";
+import type { Address, PackType } from "@/types";
+
+export const ADDR_SINGLE_KEY = "pm.address.v1";   // старый формат (один адрес)
+export const ADDR_LIST_KEY   = "pm.addresses.v1"; // основной список
+
+/* ================= Local storage ================= */
+export function loadAddresses(): Address[] {
+  try {
+    const listRaw = localStorage.getItem(ADDR_LIST_KEY);
+    if (listRaw) {
+      const list = JSON.parse(listRaw) as Address[];
+      return Array.isArray(list) ? ensureSingleDefault(list) : [];
+    }
+    // миграция из одного адреса
+    const oldRaw = localStorage.getItem(ADDR_SINGLE_KEY);
+    if (oldRaw) {
+      const a = JSON.parse(oldRaw) as Omit<Address, "id">;
+      if (a && typeof a === "object") {
+        const migrated: Address = { id: crypto.randomUUID(), ...a, isDefault: true };
+        localStorage.setItem(ADDR_LIST_KEY, JSON.stringify([migrated]));
+        localStorage.removeItem(ADDR_SINGLE_KEY);
+        return [migrated];
+      }
+    }
+  } catch {}
+  return [];
+}
+
+export function saveAddresses(list: Address[]) {
+  const clean = ensureSingleDefault(list);
+  localStorage.setItem(ADDR_LIST_KEY, JSON.stringify(clean));
+  const def = clean.find(a => a.isDefault) ?? clean[0];
+  if (def) {
+    const single = {
+      firstName: def.firstName,
+      lastName: def.lastName,
+      street: def.street,
+      house: def.house,
+      zip: def.zip,
+      city: def.city,
+      phone: def.phone ?? "",
+      note: def.note ?? "",
+      packType: def.packType ?? "",
+      postNummer: def.postNummer ?? "",
+      stationNr: def.stationNr ?? "",
+    };
+    localStorage.setItem(ADDR_SINGLE_KEY, JSON.stringify(single));
+  }
+}
+
+/* ================= Helpers ================= */
+function ensureSingleDefault(list: Address[]): Address[] {
+  const arr = [...list];
+  const idx = arr.findIndex(a => a.isDefault);
+  if (idx === -1 && arr.length) arr[0].isDefault = true;
+  if (idx !== -1) {
+    let found = false;
+    for (const a of arr) {
+      if (a.isDefault && !found) { found = true; continue; }
+      if (a.isDefault && found) a.isDefault = false;
+    }
+  }
+  return arr;
+}
+
+export function addrLabel(a: Address) {
+  const n = [a.firstName, a.lastName].filter(Boolean).join(" ");
+  const s = [a.street, a.house].filter(Boolean).join(" ");
+  const c = [a.zip, a.city].filter(Boolean).join(" ");
+  const p = a.packType ? (a.packType === "postfiliale" ? "Postfiliale" : "Packstation") : "";
+  return [n, a.packType ? `${p} #${a.stationNr || ""}`.trim() : s, c].filter(Boolean).join(" · ");
+}
+
+export const emptyAddress = (suggestedName = ""): Address => ({
+  id: "",
+  firstName: suggestedName || "",
+  lastName: "",
+  street: "",
+  house: "",
+  zip: "",
+  city: "",
+  phone: "",
+  note: "",
+  packType: "",
+  postNummer: "",
+  stationNr: "",
+  isDefault: false,
+});
+
+/* ================ Server-aware store ================ */
+/** есть ли смысл битьcя в сервер сейчас */
+const canUseServer = () => !!getToken();
+
+/** Синхронизировать список адресов из API в локальное хранилище (если авторизован). */
+export async function syncFromServer(): Promise<Address[]> {
+  if (!canUseServer()) return loadAddresses();
+  try {
+    const list = await api.addresses.list();
+    saveAddresses(list as Address[]);
+    return list as Address[];
+  } catch {
+    return loadAddresses();
+  }
+}
+
+/** Server-aware: получить текущие адреса (с попыткой синхронизации). */
+export async function listAddresses(): Promise<Address[]> {
+  return canUseServer() ? await syncFromServer() : loadAddresses();
+}
+
+/** Server-aware: создать адрес и обновить локальное хранилище. Возвращает актуальный список. */
+export async function createAddress(a: Address): Promise<Address[]> {
+  const list = loadAddresses();
+  if (!canUseServer()) {
+    const id = a.id || crypto.randomUUID();
+    const created = { ...a, id };
+    let next = [...list, created];
+    if (created.isDefault) next = next.map(x => ({ ...x, isDefault: x.id === created.id }));
+    saveAddresses(next);
+    return next;
+  }
+  try {
+    const created = await api.addresses.create(a as any);
+    // сливаем, заменяя по id
+    let next = [...list.filter(x => x.id !== created.id), created as Address];
+    if ((created as Address).isDefault) next = next.map(x => ({ ...x, isDefault: x.id === created.id }));
+    saveAddresses(next);
+    return next;
+  } catch {
+    // фолбэк в локалку
+    const id = a.id || crypto.randomUUID();
+    const created = { ...a, id };
+    let next = [...list, created];
+    if (created.isDefault) next = next.map(x => ({ ...x, isDefault: x.id === created.id }));
+    saveAddresses(next);
+    return next;
+  }
+}
+
+/** Server-aware: обновить адрес по id. Возвращает актуальный список. */
+export async function updateAddress(id: string, patch: Partial<Address>): Promise<Address[]> {
+  const list = loadAddresses();
+  const target = list.find(x => x.id === id);
+  if (!target) return list;
+
+  if (!canUseServer()) {
+    let next = list.map(x => x.id === id ? { ...x, ...patch } : x);
+    if (patch.isDefault) next = next.map(x => ({ ...x, isDefault: x.id === id }));
+    saveAddresses(next);
+    return next;
+  }
+  try {
+    const updated = await api.addresses.update(id, patch as any);
+    let next = list.map(x => x.id === id ? (updated as Address) : x);
+    if ((updated as Address).isDefault) next = next.map(x => ({ ...x, isDefault: x.id === id }));
+    saveAddresses(next);
+    return next;
+  } catch {
+    let next = list.map(x => x.id === id ? { ...x, ...patch } : x);
+    if (patch.isDefault) next = next.map(x => ({ ...x, isDefault: x.id === id }));
+    saveAddresses(next);
+    return next;
+  }
+}
+
+/** Server-aware: удалить адрес. Возвращает актуальный список. */
+export async function removeAddress(id: string): Promise<Address[]> {
+  const list = loadAddresses();
+  if (!canUseServer()) {
+    const next = ensureAfterRemoval(list, id);
+    saveAddresses(next);
+    return next;
+  }
+  try {
+    await api.addresses.remove(id);
+    const next = ensureAfterRemoval(list, id);
+    saveAddresses(next);
+    return next;
+  } catch {
+    const next = ensureAfterRemoval(list, id);
+    saveAddresses(next);
+    return next;
+  }
+}
+
+function ensureAfterRemoval(list: Address[], id: string): Address[] {
+  const next = list.filter(x => x.id !== id);
+  if (!next.some(x => x.isDefault) && next.length > 0) next[0].isDefault = true;
+  return next;
+}
+
+/** Server-aware: назначить адрес по умолчанию. Возвращает актуальный список. */
+export async function setDefaultAddress(id: string): Promise<Address[]> {
+  const list = loadAddresses();
+  if (!canUseServer()) {
+    const next = list.map(x => ({ ...x, isDefault: x.id === id }));
+    saveAddresses(next);
+    return next;
+  }
+  try {
+    await api.addresses.setDefault(id);
+    const next = list.map(x => ({ ...x, isDefault: x.id === id }));
+    saveAddresses(next);
+    return next;
+  } catch {
+    const next = list.map(x => ({ ...x, isDefault: x.id === id }));
+    saveAddresses(next);
+    return next;
+  }
+}
+
+// src/types/user.ts
+export type User = { id: string; email: string; name?: string };
+
+// src/types/shipping.ts
+export type ShipMethod = "dhl" | "express" | "packstation" | "pickup";
+
+// src/types/review.ts
+export type Review = {
+  id: string;
+  productId: string;
+  author: string;
+  rating: 1 | 2 | 3 | 4 | 5;
+  text: string;
+  createdAt: string;
+  helpful: number;
+};
+
+// src/types/product.ts
+export type Product = {
+  id: string;
+  slug: string;
+  title: string;
+  category: "Косметология" | "Витамины";
+  sub?: string;
+  leaf?: string;
+  price: number;
+  rating: number;
+  short: string;
+  description: string;
+  imageUrl?: string;
+};
+
+// src/types/order.ts
+import type { CartItem } from "./cart";
+import type { ShipMethod } from "./shipping";
+
+export type OrderStatus =
+  | "processing"
+  | "packed"
+  | "shipped"
+  | "delivered"
+  | "cancelled"
+  | "refund_requested"
+  | "refunded";
+
+export type RefundInfo = {
+  requestedAt: string;
+  reason?: string;
+  comment?: string;
+  approved?: boolean;
+  processedAt?: string;
+};
+
+export type Order = {
+  id: string;
+  createdAt: string;
+  items: CartItem[];
+  total?: number;
+  totals?: { subtotal?: number; shipping?: number; grand: number };
+  customer?: { email?: string };
+  shipping?: { method?: ShipMethod; packType?: "packstation" | "postfiliale" | null };
+  payment?: { status?: "paid" | "pending" | "failed"; last4?: string };
+  status?: OrderStatus;
+  refund?: RefundInfo;
+};
+
+// src/types/index.ts
+export * from "./user";
+export * from "./address";
+export * from "./cart";
+export * from "./order";
+export * from "./shipping";
+export * from "./product";
+export * from "./review";
+
+// src/types/cart.ts
+export type CartItem = {
+  id: string;
+  qty: number;
+  price: number;
+  title: string;
+  slug: string;
+  imageUrl?: string;
+};
+
+// src/types/address.ts
+export type PackType = "packstation" | "postfiliale";
+
+export type Address = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  street: string;
+  house: string;
+  zip: string;
+  city: string;
+  phone?: string;
+  note?: string;
+  packType?: "" | PackType;
+  postNummer?: string;
+  stationNr?: string;
+  isDefault?: boolean;
+};
+
+// src/styles/global.scss
+/* ==== ТЕМЫ ==== */
+:root {
+  /* общие акценты */
+  --pink: #ff2e8a;
+  --pink-700: #e60f73;
+  --ok: #30d158;
+  --warn: #ffd60a;
+  --error: #ff453a;
+  --shadow: 0 10px 30px rgba(255, 46, 138, 0.25);
+}
+
+/* Тёмная (дефолт) */
+:root,
+:root[data-theme="dark"] {
+  --bg: #0a0a0a;
+  --surface: #111114;
+  --surface-2: #16161a;
+  --text: #ffffff;
+  --muted: #c7c7c7;
+  --border-weak: rgba(255, 255, 255, 0.06);
+  --border-mid: rgba(255, 255, 255, 0.12);
+  --border-strong: rgba(255, 255, 255, 0.18);
+  --hr: rgba(255, 255, 255, 0.12);
+  --badge-bg: rgba(255, 46, 138, 0.10);
+
+  --header-bg: linear-gradient(180deg, rgba(10, 10, 10, 0.9), rgba(10, 10, 10, 0.6));
+  --header-backdrop: blur(8px);
+  --header-border: rgba(255, 255, 255, 0.06);
+
+  --review-bar-bg: rgba(170, 170, 170, 0.08);
+
+  --bg-search: rgba(0,0,0,.92);
+}
+
+/* Светлая */
+:root[data-theme="light"] {
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f3f4f6;
+  --text: #111114;
+  --muted: #5b5e62;
+  --border-weak: rgba(17, 17, 20, 0.08);
+  --border-mid: rgba(17, 17, 20, 0.12);
+  --border-strong: rgba(17, 17, 20, 0.18);
+  --hr: rgba(17, 17, 20, 0.14);
+  --badge-bg: rgba(255, 46, 138, 0.12);
+
+  --header-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.6));
+  --header-backdrop: blur(8px);
+  --header-border: rgba(17, 17, 20, 0.08);
+
+  --review-bar-bg: rgba(255, 46, 138, 0.08);
+
+  --bg-search-backdrop: rgba(255, 255, 255, 0.866);
+}
+
+/* ==== БАЗОВЫЕ СТИЛИ (как были, но на переменных) ==== */
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  background:
+    radial-gradient(1200px 600px at 100% -50%, rgba(255, 46, 138, 0.12), transparent)
+    var(--bg);
+  color: var(--text);
+}
+
+a { color: inherit; text-decoration: none; }
+img { max-width: 100%; display: block; }
+button { font: inherit; }
+
+.container {
+  max-width: 1200px; width: 100%;
+  margin: 0 auto; padding: 0 1rem;
+}
+
+.card {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+  border: 1px solid var(--border-weak);
+  border-radius: 18px;
+  backdrop-filter: blur(6px);
+}
+.card-item {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+  border: 1px solid var(--border-weak);
+  border-radius: 18px;
+  backdrop-filter: blur(6px);
+}
+
+.row {
+  display: grid; gap: 1rem;
+  grid-template-columns: repeat(12, 1fr);
+}
+
+/* адаптив карточек */
+@media (max-width: 900px) {
+  .card, .card-item {
+    background: transparent;
+    border: none; border-radius: 0;
+  }
+  .card-item { border-bottom: 1px solid var(--border-weak); }
+  .row { grid-template-columns: repeat(6, 1fr); }
+}
+@media (max-width: 768px) { .row { grid-template-columns: repeat(4, 1fr); } }
+@media (max-width: 600px)  { .row { grid-template-columns: repeat(4, 1fr); } }
+
+/* Кнопки */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+  padding: .6rem 1rem; font-weight: 500; border-radius: 8px;
+  border: 1px solid var(--border-mid);
+  background: var(--surface); color: var(--text);
+  cursor: pointer; transition: transform .08s ease, background .2s ease, border-color .2s ease;
+}
+.btn:hover { transform: translateY(-1px); border-color: var(--border-strong); }
+.btn:active { transform: translateY(0); }
+.btnPrimary { background: var(--pink); color: white; }
+.btn100 { width: 100%; }
+.btnGhost { background: transparent; border-color: var(--border-mid); }
+
+/* Поля */
+.input {
+  width: 100%; height: 46px;
+  padding: 0 1rem;
+  border-radius: 12px; font-size: 16px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-weak);
+  color: var(--text); outline: none;
+}
+.input::placeholder { color: var(--muted); }
+
+textarea {
+  width: 100%; min-height: 80px; resize: none; padding: 1rem;
+  border-radius: 12px; font-size: 16px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-weak);
+  color: var(--text); outline: none;
+  font-family: inherit;
+}
+
+/* Бейджи и разделители */
+.badge {
+  display: inline-flex; align-items: center; gap: .4rem;
+  font-size: .8rem; padding: .35rem .6rem; border-radius: 999px;
+  background: var(--badge-bg); color: var(--text);
+}
+.hr {
+  height: 1px; margin: 1rem 0;
+  background: linear-gradient(90deg, transparent, var(--hr), transparent);
+}
+
+// src/router/Router.tsx
+import React, { useEffect, useMemo, useState } from "react";
+import Home from "@/pages/Home";
+import Catalog from "@/pages/Catalog";
+import Product from "@/pages/Product";
+import Cart from "@/pages/Cart";
+import Checkout from "@/pages/Checkout";
+import Payment from "@/pages/Payment";
+import Profile from "@/pages/Profile";
+import NotFound from "@/pages/NotFound";
+import Auth from "@/pages/Auth";
+
+type Route = { path: string; element: React.ReactNode };
+
+const routes: Route[] = [
+  { path: "/", element: <Home /> },
+  { path: "/catalog", element: <Catalog /> },
+  { path: "/product/:slug", element: <Product /> },
+  { path: "/cart", element: <Cart /> },
+  { path: "/checkout", element: <Checkout /> },
+  { path: "/payment", element: <Payment /> },
+  { path: "/profile", element: <Profile /> },
+  { path: "/auth", element: <Auth /> },
+];
+
+// --- tiny matcher like before ---
+function match(path: string, route: string): null | Record<string, string> {
+  const paramNames: string[] = [];
+  const regex = new RegExp(
+    "^" +
+      route
+        .replace(/\/:([^/]+)/g, (_m, p1) => {
+          paramNames.push(p1);
+          return "/([^/]+)";
+        })
+        .replace(/\//g, "\\/") +
+      "$"
+  );
+  const m = path.match(regex);
+  if (!m) return null;
+  const params: Record<string, string> = {};
+  paramNames.forEach((name, i) => (params[name] = decodeURIComponent(m[i + 1])));
+  return params;
+}
+
+// --- programmatic navigation ---
+export const navigate = (to: string, replace = false) => {
+  const current = window.location.pathname + window.location.search;
+  if (to === current) return;
+  if (replace) window.history.replaceState({}, "", to);
+  else window.history.pushState({}, "", to);
+  window.dispatchEvent(new PopStateEvent("popstate"));
+};
+
+export const useRoute = () => {
+  const getKey = () => window.location.pathname + window.location.search;
+  const [locKey, setLocKey] = useState<string>(getKey());
+
+  useEffect(() => {
+    const handler = () => setLocKey(getKey());
+    window.addEventListener("popstate", handler);
+    return () => window.removeEventListener("popstate", handler);
+  }, []);
+
+  const pathname = useMemo(() => new URL(window.location.href).pathname, [locKey]);
+
+  const route = useMemo(() => {
+    for (const r of routes) {
+      const params = match(pathname, r.path);
+      if (params) return { element: r.element, params };
+    }
+    return { element: <NotFound />, params: {} as Record<string, string> };
+  }, [pathname]);
+
+  return route;
+};
+
+// --- Link component using History API ---
+export const Link: React.FC<
+  React.PropsWithChildren<{ to: string; className?: string; onClick?: () => void }>
+> = ({ to, children, className, onClick }) => {
+  return (
+    <a
+      href={to}
+      className={className}
+      onClick={(e) => {
+        onClick?.();
+        // allow new tab / modifiers / middle click
+        if (
+          e.defaultPrevented ||
+          e.button !== 0 ||
+          e.metaKey ||
+          e.ctrlKey ||
+          e.shiftKey ||
+          e.altKey
+        ) {
+          return;
+        }
+        e.preventDefault();
+        navigate(to);
+      }}
+    >
+      {children}
+    </a>
+  );
+};
+
+export const Router: React.FC = () => {
+  const { element } = useRoute();
+  return <>{element}</>;
+};
+
+// src/pages/Profile.tsx
+import { useMemo, useState, useEffect } from "react";
+import styles from "./Profile.module.scss";
+import { useAuth } from "@/contexts/AuthContext";
+import { Link } from "@/router/Router";
+import { fmtEUR } from "@/utils/money";
+import {
+  loadAddresses,
+  emptyAddress,
+  listAddresses as listAddressesSrv,
+  createAddress as createAddressSrv,
+  updateAddress as updateAddressSrv,
+  removeAddress as removeAddressSrv,
+  setDefaultAddress as setDefaultAddressSrv,
+  saveAddresses as saveAddressesLocal,
+} from "@/utils/addresses";
+import type { Address } from "@/types";
+import type { Order, OrderStatus } from "@/types";
+
+
+const ORDERS_KEY = "pm.orders.v1";
+
+/* ===== Storage helpers ===== */
+function loadOrdersRaw(): Order[] {
+  try { return JSON.parse(localStorage.getItem(ORDERS_KEY) || "[]"); }
+  catch { return []; }
+}
+function saveOrdersRaw(list: Order[]) {
+  localStorage.setItem(ORDERS_KEY, JSON.stringify(list));
+}
+
+/* ===== Utils ===== */
+function addrToLines(a: Address): string[] {
+  const l1 = [a.firstName, a.lastName].filter(Boolean).join(" ");
+  const l2 = a.packType
+    ? `${a.packType === "postfiliale" ? "Postfiliale" : "Packstation"}${a.stationNr ? " #"+a.stationNr : ""}`
+    : [a.street, a.house].filter(Boolean).join(" ");
+  const l3 = [a.zip, a.city].filter(Boolean).join(" ");
+  return [l1, l2, l3].filter(Boolean);
+}
+
+const statusLabel: Record<OrderStatus, string> = {
+  processing: "Обработка",
+  packed: "Собираем",
+  shipped: "Отправлен",
+  delivered: "Доставлен",
+  cancelled: "Отменён",
+  refund_requested: "Возврат запрошен",
+  refunded: "Возврат оформлен",
+};
+
+const BADGES: Partial<Record<OrderStatus, "info" | "warn" | "good" | "bad">> = {
+  processing: "info",
+  packed: "info",
+  shipped: "info",
+  delivered: "good",
+  cancelled: "bad",
+  refund_requested: "warn",
+  refunded: "good",
+};
+
+const nowMs = () => Date.now();
+const daysSince = (iso: string) => (nowMs() - +new Date(iso)) / 86400000;
+
+/* ======================= Вью «гость» ======================= */
+function ProfileGuest() {
+  return (
+    <div className="container">
+      <h1>Профиль</h1>
+      <div className={`card ${styles.empty}`}>
+        <div>Вы не авторизованы.</div>
+        <div className={styles.emptyActions}>
+          <Link to="/auth?next=/profile" className="btn btnPrimary">Войти / Регистрация</Link>
+          <Link to="/" className="btn">На главную</Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ================== Вью «авторизован» ===================== */
+function ProfileAuthed() {
+  const auth = useAuth();
+  const user = auth.user!;
+
+  // tabs
+  const initTab = (): "profile" | "address" | "orders" => {
+    try {
+      const t = new URL(window.location.href).searchParams.get("tab");
+      return (t === "address" || t === "orders") ? t : "profile";
+    } catch { return "profile"; }
+  };
+  const [tab, _setTab] = useState<"profile" | "address" | "orders">(initTab());
+  const setTab = (t: "profile" | "address" | "orders") => {
+    _setTab(t);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set("tab", t);
+      history.replaceState(null, "", url.toString());
+    } catch {}
+  };
+
+  /* --------------------- Профиль --------------------- */
+  const [name, setName]   = useState(user.name || "");
+  const [email, setEmail] = useState(user.email || "");
+
+  useEffect(() => {
+    setName(user?.name || "");
+    setEmail(user?.email || "");
+  }, [user?.name, user?.email]);
+
+  const saveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const nextName = name.trim();
+    const nextEmail = email.trim();
+    try {
+      await auth.updateProfile({ name: nextName, email: nextEmail });
+      // тут можно показать "Сохранено"
+    } catch (err: any) {
+      alert(err?.message || "Не удалось сохранить профиль.");
+    }
+  };
+
+  /* --------------------- Адреса --------------------- */
+  const [addresses, setAddresses] = useState<Address[]>(loadAddresses());
+  const [addrLoading, setAddrLoading] = useState<boolean>(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState<boolean>(addresses.length === 0);
+  const suggestFirst = user.name?.split(" ")[0] || "";
+  const [draft, setDraft] = useState<Address>(emptyAddress(suggestFirst));
+
+  // первичная синхронизация с сервером
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      setAddrLoading(true);
+      try {
+        const list = await listAddressesSrv();
+        if (mounted) {
+          setAddresses(list);
+          setShowForm(list.length === 0);
+        }
+      } finally {
+        if (mounted) setAddrLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  const startAdd = () => { setEditingId(null); setDraft(emptyAddress(suggestFirst)); setShowForm(true); };
+  const startEdit = (a: Address) => { setEditingId(a.id); setDraft({ ...a }); setShowForm(true); };
+  const cancelForm = () => { setShowForm(false); setEditingId(null); setDraft(emptyAddress(suggestFirst)); };
+
+  const submitAddress = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const d = { ...draft };
+    if (!d.firstName.trim() || !d.lastName.trim() || !d.zip.trim() || !d.city.trim()) {
+      alert("Пожалуйста, заполните имя, фамилию, PLZ и город.");
+      return;
+    }
+    d.firstName = d.firstName.trim();
+    d.lastName  = d.lastName.trim();
+    d.street    = d.street.trim();
+    d.house     = d.house.trim();
+    d.zip       = d.zip.trim();
+    d.city      = d.city.trim();
+
+    try {
+      setAddrLoading(true);
+      const next = editingId
+        ? await updateAddressSrv(editingId, d)
+        : await createAddressSrv({ ...d, id: d.id || crypto.randomUUID() });
+      setAddresses(next);
+      setShowForm(false);
+      setEditingId(null);
+      setDraft(emptyAddress(suggestFirst));
+    } catch (err: any) {
+      alert(err?.message || "Не удалось сохранить адрес.");
+    } finally {
+      setAddrLoading(false);
+    }
+  };
+
+  const removeAddress = async (id: string) => {
+    if (!confirm("Удалить этот адрес?")) return;
+    try {
+      setAddrLoading(true);
+      const next = await removeAddressSrv(id);
+      setAddresses(next);
+    } catch (err: any) {
+      alert(err?.message || "Не удалось удалить адрес.");
+    } finally {
+      setAddrLoading(false);
+    }
+  };
+
+  const setDefault = async (id: string) => {
+    try {
+      setAddrLoading(true);
+      const next = await setDefaultAddressSrv(id);
+      setAddresses(next);
+    } catch (err: any) {
+      alert(err?.message || "Не удалось изменить адрес по умолчанию.");
+    } finally {
+      setAddrLoading(false);
+    }
+  };
+
+  /* --------------------- Заказы --------------------- */
+  const [ordersVer, setOrdersVer] = useState(0);
+
+  const orders = useMemo((): Array<Order & { _total: number }> => {
+    const raw = loadOrdersRaw();
+    const mine = raw.filter(o => (o.customer?.email || "").toLowerCase() === (user.email || "").toLowerCase());
+    return mine
+      .map(o => {
+        const total = o.total ?? o.totals?.grand ?? o.items.reduce((s,i)=>s+i.price*i.qty,0);
+        const status: OrderStatus = (o.status as OrderStatus) || "processing";
+        return { ...o, status, _total: total as number };
+      })
+      .sort((a,b)=> +new Date(b.createdAt) - +new Date(a.createdAt));
+  }, [user.email, ordersVer]);
+
+  const canCancel = (o: Order & { _total: number }): boolean => {
+    const st = (o.status as OrderStatus) || "processing";
+    if (["cancelled", "shipped", "delivered", "refund_requested", "refunded"].includes(st)) return false;
+    const isPaid = o.payment?.status === "paid";
+    if (!isPaid) return true;
+    return false;
+  };
+
+  const canRequestReturn = (o: Order & { _total: number }): boolean => {
+    const st = (o.status as OrderStatus) || "processing";
+    if (["cancelled", "refund_requested", "refunded"].includes(st)) return false;
+    const isPaid = o.payment?.status === "paid";
+    if (!isPaid) return false;
+    return daysSince(o.createdAt) <= 30;
+  };
+
+  const updateOrder = (id: string, patch: Partial<Order>) => {
+    const all = loadOrdersRaw();
+    const next = all.map(o => o.id === id ? { ...o, ...patch } : o);
+    saveOrdersRaw(next);
+    setOrdersVer(v => v + 1);
+  };
+
+  const cancelOrder = (o: Order & { _total: number }) => {
+    if (!canCancel(o)) return;
+    if (!confirm("Отменить этот заказ?")) return;
+    updateOrder(o.id, { status: "cancelled" });
+    alert("Заказ отменён.");
+  };
+
+  // форма возврата
+  const [returnForId, setReturnForId] = useState<string | null>(null);
+  const [retReason, setRetReason] = useState("");
+  const [retComment, setRetComment] = useState("");
+
+  const openReturnForm = (o: Order & { _total: number }) => {
+    setReturnForId(o.id);
+    setRetReason("");
+    setRetComment("");
+  };
+
+  const submitReturn = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!returnForId) return;
+    if (!retReason) {
+      alert("Пожалуйста, выберите причину возврата.");
+      return;
+    }
+    updateOrder(returnForId, {
+      status: "refund_requested",
+      refund: {
+        requestedAt: new Date().toISOString(),
+        reason: retReason,
+        comment: retComment || "",
+        approved: false,
+      }
+    });
+    setReturnForId(null);
+    setRetReason("");
+    setRetComment("");
+    alert("Запрос на возврат отправлен. Мы свяжемся с вами по email.");
+  };
+
+  return (
+    <div className="container">
+      <h1>Профиль</h1>
+
+      <div className={styles.tabs} role="tablist">
+        <button role="tab" aria-selected={tab==="profile"} className={tab==="profile" ? styles.tabActive : styles.tab} onClick={()=>setTab("profile")}>Профиль</button>
+        <button role="tab" aria-selected={tab==="address"}  className={tab==="address"  ? styles.tabActive : styles.tab} onClick={()=>setTab("address")}>Адреса</button>
+        <button role="tab" aria-selected={tab==="orders"}   className={tab==="orders"   ? styles.tabActive : styles.tab} onClick={()=>setTab("orders")}>Заказы</button>
+        <div className={styles.spacer} />
+        <button className="btn" onClick={auth.logout}>Выйти</button>
+      </div>
+
+      {/* ---------- Профиль ---------- */}
+      {tab === "profile" && (
+        <form className={`${styles.form}`} onSubmit={saveProfile}>
+          <div className={styles.twoCols}>
+            <label className={styles.field}>
+              <span>Имя</span>
+              <input className="input" value={name} onChange={e=>setName(e.target.value)} required />
+            </label>
+            <label className={styles.field}>
+              <span>Email</span>
+              <input className="input" type="email" value={email} onChange={e=>setEmail(e.target.value)} required />
+            </label>
+          </div>
+          <button className="btn btnPrimary" type="submit">Сохранить</button>
+          <div className={styles.hint}>Эти данные используются для заказов и уведомлений.</div>
+        </form>
+      )}
+
+      {/* ---------- Адреса ---------- */}
+      {tab === "address" && (
+        <div className={styles.addrWrap}>
+          <div className={styles.addrHead}>
+            <h2>Мои адреса</h2>
+            <button className="btn btnPrimary" onClick={startAdd} disabled={addrLoading}>Добавить адрес</button>
+          </div>
+
+          {addrLoading && (
+            <div className="card" style={{ padding: ".7rem" }}>Синхронизируем адреса…</div>
+          )}
+
+          {addresses.length === 0 ? (
+            <div className="card" style={{ padding: ".9rem" }}>
+              Адресов нет. Нажмите <b>«Добавить адрес»</b>, чтобы создать первый.
+            </div>
+          ) : (
+            <div className={styles.addrList}>
+              {addresses.map(a => (
+                <article key={a.id} className={`${styles.addrCard}`}>
+                  <div className={styles.addrTop}>
+                    <div className={styles.addrLines}>
+                      {addrToLines(a).map((ln, i) => <div key={i}>{ln}</div>)}
+                      {a.phone && <div className={styles.muted}>{a.phone}</div>}
+                      {a.note && <div className={styles.muted}>{a.note}</div>}
+                      {a.packType && a.postNummer && (
+                        <div className={styles.muted}>Postnummer: {a.postNummer}</div>
+                      )}
+                    </div>
+                    <div className={styles.addrBadges}>
+                      {a.isDefault && <span className="badge">По умолчанию</span>}
+                    </div>
+                  </div>
+
+                  <div className={styles.addrActions}>
+                    {!a.isDefault && <button className="btn" onClick={()=>setDefault(a.id)} disabled={addrLoading}>Сделать основным</button>}
+                    <button className="btn" onClick={()=>startEdit(a)} disabled={addrLoading}>Редактировать</button>
+                    <button className="btn" onClick={()=>removeAddress(a.id)} disabled={addrLoading}>Удалить</button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+
+          {showForm && (
+            <form className={`card ${styles.form}`} onSubmit={submitAddress}>
+              <div className={styles.formHead}>
+                <h3>{editingId ? "Редактировать адрес" : "Новый адрес"}</h3>
+                {!editingId && addresses.length > 0 && (
+                  <label className={styles.checkInline}>
+                    <input
+                      type="checkbox"
+                      checked={!!draft.isDefault}
+                      onChange={(e)=>setDraft((d: Address) => ({ ...d, isDefault: e.target.checked }))}
+                    />
+                    <span>Сделать адресом по умолчанию</span>
+                  </label>
+                )}
+              </div>
+
+              <div className={styles.twoCols}>
+                <label className={styles.field}>
+                  <span>Имя (Vorname)</span>
+                  <input className="input" value={draft.firstName} onChange={e=>setDraft((d: Address) => ({ ...d, firstName: e.target.value }))} required />
+                </label>
+                <label className={styles.field}>
+                  <span>Фамилия (Nachname)</span>
+                  <input className="input" value={draft.lastName} onChange={e=>setDraft((d: Address) => ({ ...d, lastName: e.target.value }))} required />
+                </label>
+              </div>
+
+              <div className={styles.twoCols}>
+                <label className={styles.field}>
+                  <span>Улица (Straße)</span>
+                  <input className="input" value={draft.street} onChange={e=>setDraft((d: Address) => ({ ...d, street: e.target.value }))} />
+                </label>
+                <label className={styles.field}>
+                  <span>Дом (Hausnummer)</span>
+                  <input className="input" value={draft.house} onChange={e=>setDraft((d: Address) => ({ ...d, house: e.target.value }))} />
+                </label>
+              </div>
+
+              <div className={styles.twoCols}>
+                <label className={styles.field}>
+                  <span>PLZ</span>
+                  <input className="input" value={draft.zip} onChange={e=>setDraft((d: Address) => ({ ...d, zip: e.target.value }))} inputMode="numeric" pattern="\d{5}" required />
+                </label>
+                <label className={styles.field}>
+                  <span>Город (Ort)</span>
+                  <input className="input" value={draft.city} onChange={e=>setDraft((d: Address) => ({ ...d, city: e.target.value }))} required />
+                </label>
+              </div>
+
+              <div className={styles.twoCols}>
+                <label className={styles.field}>
+                  <span>Телефон</span>
+                  <input className="input" value={draft.phone || ""} onChange={e=>setDraft((d: Address) => ({ ...d, phone: e.target.value }))} placeholder="+49 ..." />
+                </label>
+                <label className={styles.field}>
+                  <span>Комментарий</span>
+                  <input className="input" value={draft.note || ""} onChange={e=>setDraft((d: Address) => ({ ...d, note: e.target.value }))} placeholder="Подъезд, этаж, код..." />
+                </label>
+              </div>
+
+              <div className={`card ${styles.packCard}`}>
+                <div className={styles.packTitle}>DHL Packstation / Postfiliale (опционально)</div>
+                <div className={styles.twoCols}>
+                  <label className={styles.field}>
+                    <span>Тип пункта</span>
+                    <select className="input" value={draft.packType || ""} onChange={e=>setDraft((d: Address) => ({ ...d, packType: e.target.value as any }))}>
+                      <option value="">—</option>
+                      <option value="packstation">Packstation</option>
+                      <option value="postfiliale">Postfiliale</option>
+                    </select>
+                  </label>
+                  <label className={styles.field}>
+                    <span>Postnummer</span>
+                    <input className="input" value={draft.postNummer || ""} onChange={e=>setDraft((d: Address) => ({ ...d, postNummer: e.target.value }))} />
+                  </label>
+                </div>
+                <div className={styles.twoCols}>
+                  <label className={styles.field}>
+                    <span>{draft.packType === "postfiliale" ? "Filiale Nr" : "Packstation Nr"}</span>
+                    <input className="input" value={draft.stationNr || ""} onChange={e=>setDraft((d: Address) => ({ ...d, stationNr: e.target.value }))} />
+                  </label>
+                  <div />
+                </div>
+                <div className={styles.packHint}>Эти поля нужны, если хотите доставку в пункт выдачи.</div>
+              </div>
+
+              <div className={styles.formActions}>
+                <button className="btn" type="button" onClick={cancelForm} disabled={addrLoading}>Отмена</button>
+                <button className="btn btnPrimary" type="submit" disabled={addrLoading}>{editingId ? "Сохранить" : "Добавить"}</button>
+              </div>
+            </form>
+          )}
+        </div>
+      )}
+
+      {/* ---------- Заказы ---------- */}
+      {tab === "orders" && (
+        <div className={styles.ordersWrap}>
+          {orders.length === 0 ? (
+            <div className="card" style={{ padding: ".9rem" }}>
+              Заказов пока нет. <Link to="/catalog">Перейти в каталог</Link>
+            </div>
+          ) : (
+            <div className={styles.orderList}>
+              {orders.map((o) => {
+                const st: OrderStatus = (o.status as OrderStatus) || "processing";
+                return (
+                  <article key={o.id} className={`card ${styles.orderCard}`}>
+                    <header className={styles.orderHead}>
+                      <div>Заказ <b>{o.id.slice(0,8)}</b></div>
+                      <div className={styles.orderBadges}>
+                        <span className="badge">{new Date(o.createdAt).toLocaleString("de-DE")}</span>
+                        {o.payment?.status === "paid"
+                          ? <span className="badge" title={`•••• ${o.payment?.last4 || ""}`}>Оплачено</span>
+                          : <span className="badge">Ожидает оплаты</span>}
+                        <span className={`${styles.statusBadge} badge`} data-variant={BADGES[st] || "info"}>
+                          {statusLabel[st]}
+                        </span>
+                      </div>
+                    </header>
+
+                    <div className="hr" />
+                    <div className={styles.items}>
+                      {o.items.map(i => (
+                        <div key={i.id} className={styles.itemRow}>
+                          <div className={styles.itemLeft}>
+                            <div className={styles.thumb}>
+                              <img src={i.imageUrl} alt={i.title} />
+                            </div>
+                            <div>
+                              <div className={styles.itemTitle}>{i.title}</div>
+                              <Link to={`/product/${i.slug}`}>Открыть товар</Link>
+                            </div>
+                          </div>
+                          <div className={styles.itemQty}>×{i.qty}</div>
+                          <div className={styles.itemSum}><b>{fmtEUR(i.qty * i.price)}</b></div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="hr" />
+                    <div className={styles.totalRow}>
+                      <span>Итого</span>
+                      <b>{fmtEUR((o as any)._total)}</b>
+                    </div>
+
+                    <div className={styles.orderActions}>
+                      {canCancel(o as any) && (
+                        <button className="btn" onClick={() => cancelOrder(o as any)}>
+                          Отменить заказ
+                        </button>
+                      )}
+                      {canRequestReturn(o as any) && (
+                        <button className="btn" onClick={() => openReturnForm(o as any)}>
+                          Запросить возврат
+                        </button>
+                      )}
+                    </div>
+
+                    {returnForId === o.id && (
+                      <form className={styles.returnForm} onSubmit={submitReturn}>
+                        <div className={styles.twoCols}>
+                          <label className={styles.field}>
+                            <span>Причина</span>
+                            <select
+                              className="input"
+                              value={retReason}
+                              onChange={(e) => setRetReason(e.target.value)}
+                              required
+                            >
+                              <option value="">— выберите причину —</option>
+                              <option value="not_fit">Не подошёл / не понравился</option>
+                              <option value="defect">Брак / повреждение</option>
+                              <option value="wrong">Неверный товар</option>
+                              <option value="other">Другое</option>
+                            </select>
+                          </label>
+                          <label className={styles.field}>
+                            <span>Комментарий (необязательно)</span>
+                            <input
+                              className="input"
+                              value={retComment}
+                              onChange={(e) => setRetComment(e.target.value)}
+                              placeholder="Опишите детали, если нужно"
+                            />
+                          </label>
+                        </div>
+                        <div className={styles.formActions}>
+                          <button type="button" className="btn" onClick={() => setReturnForId(null)}>Отмена</button>
+                          <button type="submit" className="btn btnPrimary">Отправить запрос</button>
+                        </div>
+                        <div className={styles.hint}>
+                          После подтверждения мы пришлём инструкцию по возврату на ваш email.
+                        </div>
+                      </form>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ================== Обёртка (экспорт) ===================== */
+export default function Profile() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="container">
+        <h1>Профиль</h1>
+        <div className="card" style={{ padding: ".9rem" }}>Загружаем профиль…</div>
+      </div>
+    );
+  }
+
+  if (!user) return <ProfileGuest />;
+  return <ProfileAuthed />;
+}
+
+// src/pages/Product.tsx
+import { useRoute } from "@/router/Router";
+import styles from "./Product.module.scss";
+import { products } from "@/data/products";
+import { useCart } from "@/contexts/CartContext";
+import Breadcrumbs, { Crumb } from "@/components/Breadcrumbs";
+import { useProducts } from "@/contexts/ProductsContext";
+import { navigate } from "@/router/Router";
+import ProductsRail from "@/components/ProductsRail";
+import Reviews from "@/components/Reviews";
+import { fmtEUR } from "@/utils/money";
+import DeliveryInfo from "@/components/DeliveryInfo";
+
+export default function Product() {
+  const { params } = useRoute();
+  const product = products.find(p => p.slug === params.slug);
+  const { add } = useCart();
+  const { setFilterPath } = useProducts();
+
+  if (!product) {
+    return (
+      <div className="container">
+        <Breadcrumbs items={[
+          { label: "Главная", to: "/" },
+          { label: "Каталог", to: "/catalog" },
+          { label: "Товар", current: true },
+        ]} />
+        <div className="card" style={{ padding: '1rem' }}>Товар не найден</div>
+      </div>
+    );
+  }
+
+  // построим список похожих: сначала по leaf, потом по sub, потом по category
+  const pool = products.filter((p) => p.id !== product.id);
+  const byLeaf = product.leaf ? pool.filter((p) => p.leaf === product.leaf) : [];
+  const bySub = product.sub ? pool.filter((p) => p.sub === product.sub) : [];
+  const byCat = pool.filter((p) => p.category === product.category);
+
+  const seen = new Set<string>();
+  const pick = (arr: typeof pool) => arr.filter((p) => !seen.has(p.id) && (seen.add(p.id), true));
+  const similar = [...pick(byLeaf), ...pick(bySub), ...pick(byCat)];
+
+  // хлебные крошки
+  const crumbs: Crumb[] = [
+    { label: "Главная", to: "/" },
+    { label: "Каталог", to: "/catalog" }
+  ];
+  if (product.category) {
+    const cat = product.category;
+    crumbs.push({
+      label: cat,
+      onClick: () => { setFilterPath([cat]); navigate("/catalog"); }
+    });
+  }
+  if (product.sub) {
+    const cat = product.category;
+    const sub = product.sub;
+    crumbs.push({
+      label: sub,
+      onClick: () => { setFilterPath([cat, sub]); navigate("/catalog"); }
+    });
+  }
+  if (product.leaf) {
+    const cat = product.category;
+    const sub = product.sub!;
+    const leaf = product.leaf;
+    crumbs.push({
+      label: leaf,
+      onClick: () => { setFilterPath([cat, sub, leaf]); navigate("/catalog"); }
+    });
+  }
+  crumbs.push({ label: product.title, current: true });
+
+  return (
+    <div className="container">
+      <Breadcrumbs items={crumbs} />
+
+      <div className={`card ${styles.wrap}`}>
+        <div className={styles.left}>
+          <div className={styles.gallery}>
+            <div className={styles.photo}>
+              <img src={product.imageUrl} alt={product.title} />
+            </div>
+            <div className={styles.thumbs}>
+              <div className={styles.thumb} />
+              <div className={styles.thumb} />
+              <div className={styles.thumb} />
+            </div>
+          </div>
+        </div>
+
+        <div className={styles.right}>
+          <h1 className={styles.title}>{product.title}</h1>
+          <div className={styles.meta}>
+            <span className="badge">{product.category}</span>
+            <span className="badge">★ {product.rating}</span>
+          </div>
+          <p className={styles.desc}>{product.description}</p>
+          <div className={styles.buy}>
+            <div className={styles.price}>{fmtEUR(product.price)}</div>
+            <button className="btn btnPrimary" onClick={() => add(product)}>Добавить в корзину</button>
+          </div>
+          <DeliveryInfo productPrice={product.price} />
+        </div>
+      </div>
+
+      {/* Отзывы о товаре */}
+      <Reviews productId={product.id} />
+
+      {/* Похожие товары */}
+      <ProductsRail title="Похожие товары" items={similar} excludeId={product.id} />
+    </div>
+  );
+}
+
+// src/pages/Payment.tsx
+import styles from "./Payment.module.scss";
+import { useEffect, useMemo, useState } from "react";
+import { navigate } from "@/router/Router";
+import Field from "@/components/Field";
+import { useCart } from "@/contexts/CartContext";
+import { fmtEUR } from "@/utils/money";
+
+export default function Payment() {
+  const draftRaw = localStorage.getItem("pm.checkoutDraft.v1");
+  const draft = draftRaw ? JSON.parse(draftRaw) : null;
+  const { clear } = useCart();
+
+  useEffect(() => {
+    if (!draft) navigate("/checkout");
+  }, [draft]);
+
+  const [holder, setHolder] = useState("");
+  const [number, setNumber] = useState("");
+  const [exp, setExp] = useState("");
+  const [cvc, setCvc] = useState("");
+
+  if (!draft) return null;
+
+  const pay = (e: React.FormEvent) => {
+    e.preventDefault();
+    // здесь в будущем будет Stripe; сейчас просто финализируем заказ
+    const order = {
+      ...draft,
+      payment: {
+        method: "card",
+        status: "paid",
+        last4: number.replace(/\s+/g, "").slice(-4),
+      },
+    };
+    const KEY = "pm.orders.v1";
+    const prev = JSON.parse(localStorage.getItem(KEY) || "[]");
+    localStorage.setItem(KEY, JSON.stringify([order, ...prev]));
+    localStorage.removeItem("pm.checkoutDraft.v1");
+    clear();
+    navigate("/profile?tab=orders");
+  };
+
+  const sum = draft.totals as { subtotal: number; shipping: number; grand: number; vatIncluded: number };
+
+  return (
+    <div className="container">
+      <h1>Оплата картой</h1>
+      <div className={styles.grid}>
+        <form className={`card ${styles.form}`} onSubmit={pay}>
+
+          <Field label="Держатель карты">
+            <input className="input" value={holder} onChange={(e) => setHolder(e.target.value)} placeholder="IVAN IVANOV" required />
+          </Field>
+          <div className={styles.twoCols}>
+            <Field label="Номер карты">
+              <input
+                className="input"
+                value={number}
+                onChange={(e) => setNumber(e.target.value)}
+                inputMode="numeric"
+                placeholder="4242 4242 4242 4242"
+                pattern="[\d\s]{12,23}"
+                required
+              />
+            </Field>
+            <div className={styles.twoColsInner}>
+              <Field label="MM/YY">
+                <input className="input" value={exp} onChange={(e) => setExp(e.target.value)} placeholder="12/29" pattern="\d{2}/\d{2}" required />
+              </Field>
+              <Field label="CVC">
+                <input className="input" value={cvc} onChange={(e) => setCvc(e.target.value)} placeholder="123" pattern="\d{3,4}" required />
+              </Field>
+            </div>
+          </div>
+
+          <button className="btn btnPrimary" type="submit">
+            Оплатить {fmtEUR(sum.grand)}
+          </button>
+        </form>
+
+        <aside className={"card " + styles.aside}>
+          <div className={styles.title}>Итог заказа</div>
+          <div className={styles.row}><span>Товары</span><b>{fmtEUR(sum.subtotal)}</b></div>
+          <div className={styles.row}><span>Доставка</span><b>{fmtEUR(sum.shipping)}</b></div>
+          <div className="hr" />
+          <div className={styles.rowBig}><span>К оплате</span><b>{fmtEUR(sum.grand)}</b></div>
+          <div className={styles.vatNote}>Включая НДС 19%: {fmtEUR(sum.vatIncluded)}</div>
+
+          <div className="hr" />
+          <div className={styles.title}>Доставка</div>
+          <div className={styles.small}>
+            {draft.shipping.method === "pickup" && "Самовывоз — Berlin-Mitte"}
+            {draft.shipping.method === "dhl" && "DHL Paket"}
+            {draft.shipping.method === "express" && "DHL Express"}
+            {draft.shipping.method === "packstation" &&
+              (draft.shipping.packType === "packstation" ? "DHL Packstation" : "DHL Postfiliale")}
+          </div>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+// src/pages/NotFound.tsx
+export default function NotFound() {
+  return (
+    <div className="container">
+      <div className="card" style={{ padding: "1rem" }}>Страница не найдена</div>
+    </div>
+  );
+}
+
+// src/pages/Home.tsx
+import styles from "./Home.module.scss";
+import { Link } from "@/router/Router";
+import { useProducts } from "@/contexts/ProductsContext";
+import ProductCard from "@/components/ProductCard";
+import ProductsRail from "@/components/ProductsRail";
+import { products as allProducts } from "@/data/products"; // для длинной ленты
+
+export default function Home() {
+  const { products } = useProducts();
+  const top = products.slice(0, 4);
+  return (
+    <div className="container">
+      <section className={styles.hero}>
+        <div className={`${styles.heroCard}`}>
+          <div className={styles.heroGrid}>
+            <div className={styles.heroContent}>
+              <span className={styles.badge}>новинки</span>
+              <h1 className={styles.title}>Шото написать...</h1>
+              <p className={styles.subtitle}>
+                Шо то дописать...
+              </p>
+              <div className={styles.actions}>
+                <Link to="/catalog" className="btn btnPrimary">В каталог</Link>
+                <Link to="/profile?tab=orders" className="btn">Мои заказы</Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+      <section className={styles.section}>
+        <div className={styles.sectionHead}>
+          <h2>Популярное</h2>
+        </div>
+        <ProductsRail items={top} />
+      </section>
+
+      <section className={styles.section}>
+        <div className={styles.sectionHead}>
+          <h2>Рекомендуем</h2>
+        </div>
+        <ProductsRail items={allProducts} />
+      </section>
+    </div>
+  );
+}
+
+// src/pages/Checkout.tsx
+import Field from "@/components/Field";
+import { useCart } from "@/contexts/CartContext";
+import { useAuth } from "@/contexts/AuthContext";
+import styles from "./Checkout.module.scss";
+import { Link, navigate } from "@/router/Router";
+import { useEffect, useMemo, useState } from "react";
+import {
+  loadAddresses,
+  saveAddresses as saveAddressesLocal,
+  addrLabel,
+  listAddresses as listAddressesSrv,
+  createAddress as createAddressSrv,
+} from "@/utils/addresses";
+import type { Address, PackType, ShipMethod } from "@/types";
+
+const FREE_THRESHOLD = 49; // € — бесплатная доставка DHL/Packstation от этой суммы
+const VAT_RATE = 0.19;
+
+const fmtEUR = (n: number) =>
+  n.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+
+function calcShipping(method: ShipMethod, subtotal: number) {
+  switch (method) {
+    case "dhl":
+    case "packstation":
+      return subtotal >= FREE_THRESHOLD ? 0 : 4.99;
+    case "express":
+      return 12.9;
+    case "pickup":
+      return 0;
+  }
+}
+
+export default function Checkout() {
+  const { items, total } = useCart();
+  const { user } = useAuth();
+
+  // адресная книга
+  const [addresses, setAddresses] = useState<Address[]>(loadAddresses);
+  const defaultAddr = addresses.find(a => a.isDefault) ?? addresses[0] ?? null;
+
+  // синхронизируем с бэком при монтировании
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const list = await listAddressesSrv();
+      if (mounted) setAddresses(list);
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  // способ доставки
+  const [shipMethod, setShipMethod] = useState<ShipMethod>(() => {
+    const list = loadAddresses();
+    const d = list.find(a => a.isDefault) ?? list[0];
+    return d?.packType ? "packstation" : "dhl";
+  });
+
+  // режим адреса
+  const [addrMode, setAddrMode] = useState<"book" | "manual">(addresses.length ? "book" : "manual");
+  const [selectedId, setSelectedId] = useState<string | null>(defaultAddr?.id ?? null);
+
+  // совместимые адреса
+  const compatibleAddresses = useMemo(() => {
+    if (shipMethod === "packstation") return addresses.filter(a => !!a.packType);
+    if (shipMethod === "pickup") return []; // адрес не нужен
+    return addresses.filter(a => !a.packType);
+  }, [addresses, shipMethod]);
+
+  const selectedAddr = useMemo(() => {
+    const found = addresses.find(a => a.id === selectedId) || null;
+    if (!found) return null;
+    if (shipMethod === "packstation" && !found.packType) return null;
+    if ((shipMethod === "dhl" || shipMethod === "express") && found.packType) return null;
+    return found;
+  }, [addresses, selectedId, shipMethod]);
+
+  useEffect(() => {
+    if (shipMethod === "pickup") return; // адрес не нужен
+    if (selectedAddr) return;
+    const first = compatibleAddresses[0];
+    if (first) setSelectedId(first.id);
+  }, [shipMethod, compatibleAddresses, selectedAddr]);
+
+  // суммы
+  const subtotal = total;
+  const shipCost = useMemo(() => calcShipping(shipMethod, subtotal), [shipMethod, subtotal]);
+  const grand = subtotal + shipCost;
+  const vatIncluded = +(grand - grand / (1 + VAT_RATE)).toFixed(2);
+
+  // контакты
+  const [firstName, setFirstName] = useState(user?.name?.split(" ")[0] ?? "");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState(user?.email ?? "");
+  const [phone, setPhone] = useState("");
+
+  // ручной обычный адрес
+  const [street, setStreet] = useState("");
+  const [house, setHouse] = useState("");
+  const [zip, setZip] = useState("");
+  const [city, setCity] = useState("");
+
+  // ручной packstation
+  const [packType, setPackType] = useState<PackType>("packstation");
+  const [postNummer, setPostNummer] = useState("");
+  const [stationNr, setStationNr] = useState("");
+
+  const [extra, setExtra] = useState("");
+  const [agree, setAgree] = useState(true);
+
+  // флаги сохранения
+  const firstAddress = addresses.length === 0;
+  const [saveToBook, setSaveToBook] = useState<boolean>(firstAddress);
+  const [makeDefault, setMakeDefault] = useState<boolean>(firstAddress);
+  const [savedFlash, setSavedFlash] = useState(false);
+
+  // валидность ручного адреса
+  const isManualValid = useMemo(() => {
+    if (shipMethod === "packstation") {
+      return !!postNummer && !!stationNr && /^\d{5}$/.test(zip) && city.trim().length > 0;
+    }
+    if (shipMethod === "pickup") return true;
+    return !!street && !!house && /^\d{5}$/.test(zip) && city.trim().length > 0;
+  }, [shipMethod, postNummer, stationNr, zip, city, street, house]);
+
+  const eta =
+    shipMethod === "express" ? "1 Werktag"
+    : shipMethod === "pickup" ? "Сразу после подтверждения (самовывоз)"
+    : "2–3 Werktage";
+
+  // единый билдер нового адреса из ручных полей
+  const buildManualAddress = (): Address => {
+    const id = crypto.randomUUID();
+    if (shipMethod === "packstation") {
+      return {
+        id,
+        firstName, lastName, phone,
+        street: "", house: "",
+        zip, city,
+        note: extra,
+        packType,
+        postNummer, stationNr,
+        isDefault: makeDefault || addresses.length === 0,
+      };
+    }
+    return {
+      id,
+      firstName, lastName, phone,
+      street, house,
+      zip, city,
+      note: extra,
+      packType: "", postNummer: "", stationNr: "",
+      isDefault: makeDefault || addresses.length === 0,
+    };
+  };
+
+  // ЯВНОЕ сохранение адреса (без перехода к оплате)
+  const saveManualNow = async () => {
+    if (!saveToBook) return;
+    if (!isManualValid) {
+      alert("Проверьте обязательные поля адреса.");
+      return;
+    }
+    const newAddr = buildManualAddress();
+    try {
+      const next = await createAddressSrv(newAddr);
+      setAddresses(next);
+      const saved = next.find(a => a.id === newAddr.id) || next[next.length - 1];
+      setSelectedId(saved?.id ?? null);
+      setAddrMode("book");
+      if (saved?.packType && shipMethod !== "packstation") setShipMethod("packstation");
+      if (!saved?.packType && shipMethod === "packstation") setShipMethod("dhl");
+      setSavedFlash(true);
+      setTimeout(() => setSavedFlash(false), 1600);
+    } catch (e: any) {
+      alert(e?.message || "Не удалось сохранить адрес.");
+    }
+  };
+
+  // сабмит (с сохранением и переходом к оплате)
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (items.length === 0) return alert("Корзина пуста");
+    if (!agree) return alert("Необходимо согласиться с условиями.");
+
+    let addressForDraft:
+      | { street: string; house: string; zip: string; city: string; note?: string }
+      | { postNummer: string; stationNr: string; zip: string; city: string; note?: string }
+      | { pickup: string };
+
+    if (shipMethod === "pickup") {
+      addressForDraft = { pickup: "Berlin-Mitte, Mon–Sat 10–20" };
+    } else if (addrMode === "book") {
+      if (!selectedAddr) return alert("Выберите сохранённый адрес или переключитесь на ввод вручную.");
+      if (shipMethod === "packstation") {
+        if (!selectedAddr.packType || !selectedAddr.postNummer || !selectedAddr.stationNr || !selectedAddr.zip || !selectedAddr.city) {
+          return alert("Выбранный адрес не подходит для Packstation/Postfiliale.");
+        }
+        addressForDraft = {
+          postNummer: selectedAddr.postNummer!,
+          stationNr: selectedAddr.stationNr!,
+          zip: selectedAddr.zip,
+          city: selectedAddr.city,
+          note: selectedAddr.note,
+        };
+      } else {
+        if (!selectedAddr.street || !selectedAddr.house || !selectedAddr.zip || !selectedAddr.city) {
+          return alert("В сохранённом адресе не заполнены обязательные поля.");
+        }
+        addressForDraft = {
+          street: selectedAddr.street,
+          house: selectedAddr.house,
+          zip: selectedAddr.zip,
+          city: selectedAddr.city,
+          note: selectedAddr.note,
+        };
+      }
+    } else {
+      // manual — при необходимости сохраним в книгу прямо сейчас
+      if (!isManualValid) {
+        return alert("Проверьте обязательные поля адреса.");
+      }
+      if (saveToBook) {
+        try {
+          const newAddr = buildManualAddress();
+          const next = await createAddressSrv(newAddr);
+          setAddresses(next);
+          const saved = next.find(a => a.id === newAddr.id) || newAddr;
+          setSelectedId(saved.id);
+          setAddrMode("book");
+        } catch {
+          // если сервер не ответил — локально всё равно сохраним,
+          // чтобы не блокировать покупку
+          const newAddr = buildManualAddress();
+          const next = [...addresses, newAddr];
+          saveAddressesLocal(next);
+          setAddresses(next);
+          setSelectedId(newAddr.id);
+          setAddrMode("book");
+        }
+      }
+      // адрес в драфт
+      if (shipMethod === "packstation") {
+        addressForDraft = { postNummer, stationNr, zip, city, note: extra };
+      } else {
+        addressForDraft = { street, house, zip, city, note: extra };
+      }
+    }
+
+    const draft = {
+      id: crypto.randomUUID(),
+      createdAt: new Date().toISOString(),
+      currency: "EUR",
+      vatRate: VAT_RATE,
+      totals: { subtotal, shipping: shipCost, grand, vatIncluded },
+      items,
+      customer: { firstName, lastName, email, phone },
+      shipping: {
+        method: shipMethod,
+        packType: shipMethod === "packstation"
+          ? (addrMode === "book" ? (selectedAddr?.packType || "packstation") : packType)
+          : null,
+        address: addressForDraft,
+      },
+    };
+
+    localStorage.setItem("pm.checkoutDraft.v1", JSON.stringify(draft));
+    navigate("/payment");
+  };
+
+  const freeLeft = Math.max(0, FREE_THRESHOLD - subtotal);
+  const freeNote =
+    shipMethod === "dhl" || shipMethod === "packstation"
+      ? freeLeft > 0
+        ? `Добавьте ещё ${fmtEUR(freeLeft)} для бесплатной доставки`
+        : "У вас бесплатная доставка"
+      : null;
+
+  return (
+    <div className="container">
+      <h1>Оформление заказа</h1>
+      <div className={styles.grid}>
+        <form className={`card ${styles.form}`} onSubmit={onSubmit}>
+          <h3 className={styles.sectionTitle}>Получатель</h3>
+          <div className={styles.twoCols}>
+            <Field label="Имя (Vorname)">
+              <input className="input" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
+            </Field>
+            <Field label="Фамилия (Nachname)">
+              <input className="input" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
+            </Field>
+          </div>
+          <div className={styles.twoCols}>
+            <Field label="Email">
+              <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            </Field>
+            <Field label="Телефон (опционально)">
+              <input className="input" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+49 ..." />
+            </Field>
+          </div>
+
+          <h3 className={styles.sectionTitle}>Доставка (Deutschland, DHL)</h3>
+
+          <div className={styles.shipOptions + ""}>
+            <label className={styles.shipRow}>
+              <input type="radio" name="ship" checked={shipMethod === "dhl"} onChange={() => setShipMethod("dhl")} />
+              <div className={styles.shipBody}>
+                <div className={styles.shipTitle}>DHL Paket • 2–3 Werktage</div>
+                <div className={styles.shipMeta}>
+                  {subtotal >= FREE_THRESHOLD ? "Бесплатно от 49 € — у вас бесплатно" : fmtEUR(4.99)} · отслеживание
+                </div>
+              </div>
+              <div className={styles.shipPrice}>{subtotal >= FREE_THRESHOLD ? fmtEUR(0) : fmtEUR(4.99)}</div>
+            </label>
+
+            <label className={styles.shipRow}>
+              <input type="radio" name="ship" checked={shipMethod === "express"} onChange={() => setShipMethod("express")} />
+              <div className={styles.shipBody}>
+                <div className={styles.shipTitle}>DHL Express • 1 Werktag</div>
+                <div className={styles.shipMeta}>курьер, приоритетная обработка</div>
+              </div>
+              <div className={styles.shipPrice}>{fmtEUR(12.9)}</div>
+            </label>
+
+            <label className={styles.shipRow}>
+              <input type="radio" name="ship" checked={shipMethod === "packstation"} onChange={() => setShipMethod("packstation")} />
+              <div className={styles.shipBody}>
+                <div className={styles.shipTitle}>DHL Packstation / Postfiliale</div>
+                <div className={styles.shipMeta}>
+                  {subtotal >= FREE_THRESHOLD ? "Бесплатно" : fmtEUR(4.99)} · забрать в удобное время
+                </div>
+              </div>
+              <div className={styles.shipPrice}>{subtotal >= FREE_THRESHOLD ? fmtEUR(0) : fmtEUR(4.99)}</div>
+            </label>
+
+            <label className={styles.shipRow}>
+              <input type="radio" name="ship" checked={shipMethod === "pickup"} onChange={() => setShipMethod("pickup")} />
+              <div className={styles.shipBody}>
+                <div className={styles.shipTitle}>Самовывоз • Berlin-Mitte</div>
+                <div className={styles.shipMeta}>после подтверждения, без очереди</div>
+              </div>
+              <div className={styles.shipPrice}>{fmtEUR(0)}</div>
+            </label>
+          </div>
+
+          {/* Адрес (кроме самовывоза) */}
+          {shipMethod !== "pickup" && (
+            <div className={styles.addrBlock}>
+              <div className={styles.addrHead}>
+                <h3>Адрес доставки</h3>
+                <div className={styles.addrMode}>
+                  <label>
+                    <input
+                      type="radio"
+                      name="addrmode"
+                      checked={addrMode === "book"}
+                      onChange={() => setAddrMode("book")}
+                      disabled={compatibleAddresses.length === 0}
+                    />
+                    <span>Сохранённый</span>
+                  </label>
+                  <label>
+                    <input
+                      type="radio"
+                      name="addrmode"
+                      checked={addrMode === "manual" || compatibleAddresses.length === 0}
+                      onChange={() => setAddrMode("manual")}
+                    />
+                    <span>Новый</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Сохранённый адрес */}
+              {addrMode === "book" && compatibleAddresses.length > 0 && (
+                <>
+                  <Field label="Выберите адрес">
+                    <select
+                      className="input"
+                      value={selectedId || ""}
+                      onChange={(e) => setSelectedId(e.target.value || null)}
+                    >
+                      {compatibleAddresses.map(a => (
+                        <option key={a.id} value={a.id}>
+                          {addrLabel(a)}{a.isDefault ? " — основной" : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  {selectedAddr ? (
+                    <div className={styles.addrPreview + ""}>
+                      <div className={styles.previewRow}>
+                        <div className={styles.previewCol}>
+                          <div className={styles.previewName}>
+                            {[selectedAddr.firstName, selectedAddr.lastName].filter(Boolean).join(" ")}
+                          </div>
+                          {!selectedAddr.packType ? (
+                            <>
+                              <div>{[selectedAddr.street, selectedAddr.house].filter(Boolean).join(" ")}</div>
+                              <div>{[selectedAddr.zip, selectedAddr.city].filter(Boolean).join(" ")}</div>
+                            </>
+                          ) : (
+                            <>
+                              <div>{selectedAddr.packType === "postfiliale" ? "Postfiliale" : "Packstation"} #{selectedAddr.stationNr}</div>
+                              <div>{[selectedAddr.zip, selectedAddr.city].filter(Boolean).join(" ")}</div>
+                              <div className={styles.muted}>Postnummer: {selectedAddr.postNummer}</div>
+                            </>
+                          )}
+                          {selectedAddr.note && <div className={styles.muted}>{selectedAddr.note}</div>}
+                        </div>
+                        <div className={styles.previewActions}>
+                          <Link to="/profile?tab=address" className="btn">Управлять адресами</Link>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="card" style={{ padding: ".7rem" }}>
+                      Нет подходящего адреса. Переключитесь на «Новый» или добавьте адрес в <Link to="/profile?tab=address">профиле</Link>.
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Новый адрес + моментальное сохранение */}
+              {(addrMode === "manual" || compatibleAddresses.length === 0) && (
+                <>
+                  {shipMethod === "packstation" ? (
+                    <>
+                      <div className={styles.twoCols}>
+                        <Field label="Тип пункта">
+                          <select className="input" value={packType} onChange={(e) => setPackType(e.target.value as PackType)}>
+                            <option value="packstation">Packstation</option>
+                            <option value="postfiliale">Postfiliale</option>
+                          </select>
+                        </Field>
+                        <Field label="Postnummer (DHL Kunden-Nr)">
+                          <input className="input" value={postNummer} onChange={(e) => setPostNummer(e.target.value)} required />
+                        </Field>
+                      </div>
+                      <div className={styles.twoCols}>
+                        <Field label={packType === "packstation" ? "Packstation Nr" : "Filiale Nr"}>
+                          <input className="input" value={stationNr} onChange={(e) => setStationNr(e.target.value)} required />
+                        </Field>
+                        <Field label="PLZ">
+                          <input className="input" value={zip} onChange={(e) => setZip(e.target.value)} required pattern="\d{5}" />
+                        </Field>
+                      </div>
+                      <Field label="Город (Ort)">
+                        <input className="input" value={city} onChange={(e) => setCity(e.target.value)} required />
+                      </Field>
+                    </>
+                  ) : (
+                    <>
+                      <div className={styles.twoCols}>
+                        <Field label="Улица (Straße)">
+                          <input className="input" value={street} onChange={(e) => setStreet(e.target.value)} required />
+                        </Field>
+                        <Field label="Дом (Hausnummer)">
+                          <input className="input" value={house} onChange={(e) => setHouse(e.target.value)} required />
+                        </Field>
+                      </div>
+                      <div className={styles.twoCols}>
+                        <Field label="PLZ">
+                          <input className="input" value={zip} onChange={(e) => setZip(e.target.value)} required pattern="\d{5}" />
+                        </Field>
+                        <Field label="Город (Ort)">
+                          <input className="input" value={city} onChange={(e) => setCity(e.target.value)} required />
+                        </Field>
+                      </div>
+                    </>
+                  )}
+
+                  <Field label="Комментарий для курьера (необязательно)">
+                    <textarea rows={3} value={extra} onChange={(e) => setExtra(e.target.value)} placeholder="Звонить перед доставкой, оставить у соседа и т.п." />
+                  </Field>
+
+                  <div className={styles.saveAddressRow}>
+                    <label className={styles.check}>
+                      <input type="checkbox" checked={saveToBook} onChange={(e) => setSaveToBook(e.target.checked)} />
+                      <span>Сохранить адрес в моих адресах</span>
+                    </label>
+                    {saveToBook && (
+                      <>
+                        <label className={styles.check}>
+                          <input type="checkbox" checked={makeDefault} onChange={(e) => setMakeDefault(e.target.checked)} />
+                          <span>Сделать основным</span>
+                        </label>
+                        <div className={styles.manualSaveRow}>
+                          <button
+                            type="button"
+                            className="btn"
+                            onClick={saveManualNow}
+                            disabled={!isManualValid}
+                            title={!isManualValid ? "Заполните обязательные поля" : "Сохранит адрес не переходя к оплате"}
+                          >
+                            Сохранить адрес сейчас
+                          </button>
+                          {savedFlash && <span className={styles.okMark}>Сохранено ✓</span>}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          <label className={styles.agree}>
+            <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
+            <span>Я согласен с условиями и политикой возврата.</span>
+          </label>
+
+          <button className="btn btnPrimary" type="submit">Далее — к оплате</button>
+        </form>
+
+        <aside className={"card " + styles.aside}>
+          <div className={styles.totalRow}><span>Товаров</span><b>{items.length}</b></div>
+          <div className={styles.totalRow}><span>Сумма товаров</span><b>{fmtEUR(subtotal)}</b></div>
+          <div className={styles.totalRow}><span>Доставка ({eta})</span><b>{fmtEUR(shipCost)}</b></div>
+          {freeNote && (
+            <div className={styles.noteBar} data-good={freeLeft <= 0}>
+              {freeNote}
+            </div>
+          )}
+          <div className="hr" />
+          <div className={styles.totalBig}><span>К оплате</span><b>{fmtEUR(grand)}</b></div>
+          <div className={styles.vatNote}>Включая НДС 19%: {fmtEUR(vatIncluded)}</div>
+
+          {items.length === 0 && (
+            <div className={styles.empty}>
+              Корзина пуста. <Link to="/catalog">Перейти в каталог</Link>
+            </div>
+          )}
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+// src/pages/Catalog.tsx
+import { useState } from "react";
+import { useProducts } from "@/contexts/ProductsContext";
+import ProductCard from "@/components/ProductCard";
+import Breadcrumbs, { Crumb } from "@/components/Breadcrumbs";
+import { navigate } from "@/router/Router";
+import styles from "./Catalog.module.scss";
+import FiltersPanel from "@/components/FiltersPanel";
+import Modal from "@/components/Modal";
+
+export default function Catalog() {
+  const {
+    products,
+    sort, setSort,
+    filterPath, setFilterPath,
+  } = useProducts();
+
+  const [openSheet, setOpenSheet] = useState(false);
+
+  const hasPath = filterPath.length > 0;
+
+  const crumbs: Crumb[] = [
+    { label: "Главная", to: "/" },
+    { label: "Каталог", current: filterPath.length === 0 }
+  ];
+  filterPath.forEach((name, idx) => {
+    const isLast = idx === filterPath.length - 1;
+    crumbs.push({
+      label: name,
+      current: isLast,
+      onClick: !isLast
+        ? () => { setFilterPath(filterPath.slice(0, idx + 1)); navigate("/catalog"); }
+        : undefined
+    });
+  });
+
+  return (
+    <div className="container">
+      <Breadcrumbs items={crumbs} />
+
+      <div className={styles.topbar}>
+        <button className="btn btnGhost" onClick={()=>setOpenSheet(true)}>Фильтры</button>
+        <div className={styles.topbarRight}>
+          <label className={styles.sortInline}>
+            <select
+              className="input"
+              value={sort}
+              onChange={(e)=>setSort(e.target.value as any)}
+            >
+              <option value="popular">Сначала популярные</option>
+              <option value="price-asc">Сначала дешёвые</option>
+              <option value="price-desc">Сначала дорогие</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <span className={styles.counter}>Найдено: <b>{products.length}</b></span>
+
+      <div className={styles.layout}>
+        {/* Сайдбар (desktop) */}
+        <aside className={styles.sidebar}>
+          <div className="card" style={{ padding: ".8rem" }}>
+            <FiltersPanel />
+          </div>
+        </aside>
+
+        {/* Результаты */}
+        <main className={styles.main}>
+
+
+          <div className="row">
+            {products.map((p) => (
+              <div key={p.id} style={{ gridColumn: "span 4" }}>
+                <ProductCard product={p} />
+              </div>
+            ))}
+            {products.length === 0 && (
+              <div className="card" style={{ padding: "1rem" }}>
+                Ничего не найдено. Попробуйте изменить фильтры.
+              </div>
+            )}
+          </div>
+        </main>
+      </div>
+
+      {/* Мобильный bottom-sheet */}
+      <Modal
+        isOpen={openSheet}
+        onClose={()=>setOpenSheet(false)}
+        title="Фильтры и сортировка"
+        side="bottom"
+        width={720} // игнорируется для bottom, оставил на будущее
+      >
+        <div className={styles.sheetBody}>
+          <FiltersPanel inModal onApply={()=>setOpenSheet(false)} />
+        </div>
+      </Modal>
+    </div>
+  );
+}
+
+// src/pages/Cart.tsx
+import { useCart } from "@/contexts/CartContext";
+import styles from "./Cart.module.scss";
+import { Link } from "@/router/Router";
+import { fmtEUR } from "@/utils/money";
+import Icon from "@/components/Icon";
+
+export default function Cart() {
+  const { items, setQty, remove, total } = useCart();
+
+  return (
+    <div className="container">
+      <h1>Корзина</h1>
+      <div className={`card ${styles.wrap}`}>
+        <div className={styles.list}>
+          {items.length === 0 && <div className={styles.empty}>Корзина пуста</div>}
+          {items.map(i => (
+            <div className={styles.row} key={i.id}>
+              <div className={styles.cellTitle}>
+                <div className={styles.thumb}>
+                  <img src={i.imageUrl} alt={i.title} />
+                </div>
+                <div>
+                  <div className={styles.title}>{i.title}</div>
+                  <Link to={`/product/${i.slug}`} className={styles.link}>Подробнее</Link>
+                </div>
+              </div>
+              <div className={styles.cell}>
+                <input
+                  className="input"
+                  type="number"
+                  min={1}
+                  value={i.qty}
+                  onChange={e => setQty(i.id, Math.max(1, Number(e.target.value)))}
+                  style={{ width: 80 }}
+                />
+              </div>
+              <div className={styles.cell}>{fmtEUR(i.price * i.qty)}</div>
+              <div className={styles.cell}>
+                <div className={styles.btnIcon} onClick={() => remove(i.id)}>
+                  <Icon name="close" width={20} />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <aside className={styles.aside + " card"}>
+          <div className={styles.totalRow}>
+            <span>Итого</span>
+            <b>{fmtEUR(total)}</b>
+          </div>
+          <Link to="/checkout" className="btn btnPrimary btn100">Перейти к оформлению</Link>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
+// src/pages/Auth.tsx
+import { useState } from "react";
+import styles from "./Auth.module.scss";
+import { Link, navigate } from "@/router/Router";
+import { useAuth } from "@/contexts/AuthContext";
+
+export default function Auth() {
+  const [mode, setMode] = useState<"login" | "register">("login");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const { login, register } = useAuth();
+
+  // общие поля
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  // регистрация
+  const [name, setName] = useState("");
+  const [agree, setAgree] = useState(true);
+
+  const nextURL = (() => {
+    try { return new URL(window.location.href).searchParams.get("next") || "/"; }
+    catch { return "/"; }
+  })();
+
+  const onLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setBusy(true);
+    try {
+      await login(email.trim(), password);
+      navigate(nextURL);
+    } catch (err: any) {
+      setError(err?.message || "Не удалось войти.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    if (!agree) { setError("Необходимо согласиться с условиями."); return; }
+    setBusy(true);
+    try {
+      await register(name.trim(), email.trim(), password);
+      navigate(nextURL);
+    } catch (err: any) {
+      setError(err?.message || "Не удалось создать аккаунт.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className={styles.shell}>
+      <div className={styles.card}>
+        <img className={styles.logo} src="/logo.png" alt="Mira" />
+        <div className={styles.tabs} role="tablist">
+          <button
+            role="tab"
+            aria-selected={mode === "login"}
+            className={mode === "login" ? styles.tabActive : styles.tab}
+            onClick={() => setMode("login")}
+          >
+            Вход
+          </button>
+          <button
+            role="tab"
+            aria-selected={mode === "register"}
+            className={mode === "register" ? styles.tabActive : styles.tab}
+            onClick={() => setMode("register")}
+          >
+            Регистрация
+          </button>
+        </div>
+
+        {error && <div className={styles.error}>{error}</div>}
+
+        {mode === "login" ? (
+          <form className={styles.form} onSubmit={onLogin}>
+            <label className={styles.field}>
+              <span>Email</span>
+              <input className="input" type="email" value={email} onChange={e=>setEmail(e.target.value)} required />
+            </label>
+            <label className={styles.field}>
+              <span>Пароль</span>
+              <input className="input" type="password" value={password} onChange={e=>setPassword(e.target.value)} required />
+            </label>
+            <button className="btn btnPrimary" type="submit" disabled={busy}>
+              {busy ? "Входим..." : "Войти"}
+            </button>
+
+            <div className={styles.alt}>
+              Нет аккаунта?{" "}
+              <button type="button" className={styles.linkBtn} onClick={()=>setMode("register")}>Создать</button>
+            </div>
+          </form>
+        ) : (
+          <form className={styles.form} onSubmit={onRegister}>
+            <label className={styles.field}>
+              <span>Имя</span>
+              <input className="input" value={name} onChange={e=>setName(e.target.value)} placeholder="Как к вам обращаться" />
+            </label>
+            <label className={styles.field}>
+              <span>Email</span>
+              <input className="input" type="email" value={email} onChange={e=>setEmail(e.target.value)} required />
+            </label>
+            <label className={styles.field}>
+              <span>Пароль</span>
+              <input className="input" type="password" value={password} onChange={e=>setPassword(e.target.value)} required />
+            </label>
+            <label className={styles.check}>
+              <input type="checkbox" checked={agree} onChange={e=>setAgree(e.target.checked)} />
+              <span>Я согласен с условиями и политикой конфиденциальности.</span>
+            </label>
+            <button className="btn btnPrimary" type="submit" disabled={busy}>
+              {busy ? "Создаём..." : "Создать аккаунт"}
+            </button>
+
+            <div className={styles.alt}>
+              Уже есть аккаунт?{" "}
+              <button type="button" className={styles.linkBtn} onClick={()=>setMode("login")}>Войти</button>
+            </div>
+          </form>
+        )}
+
+        <div className={styles.backRow}>
+          <Link to="/" className="btn">На главную</Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// src/lib/api.ts
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const API = (import.meta.env.VITE_API_URL || "/api").replace(/\/$/, "");
+const TOKEN_KEY = "pm.token";
+
+/* ====================== Token helpers ====================== */
+export const getToken = () => localStorage.getItem(TOKEN_KEY);
+export const setToken = (t: string) => localStorage.setItem(TOKEN_KEY, t);
+export const clearToken = () => localStorage.removeItem(TOKEN_KEY);
+
+/* ========================= Types ========================== */
+import type { User, Address } from "@/types";
+
+/* ===================== Base request ======================= */
+async function req<T>(path: string, init: RequestInit = {}) {
+  const token = getToken();
+  const method = (init.method || "GET").toUpperCase();
+  const isGetLike = method === "GET" || method === "HEAD";
+
+  const headers: Record<string, string> = {
+    ...(init.headers as Record<string, string> | undefined),
+    ...(!isGetLike ? { "Content-Type": "application/json" } : {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+
+  const res = await fetch(API + path, {
+    ...init,
+    method,
+    headers,
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    if (res.status === 401) clearToken();
+    const msg = await res.text().catch(() => "");
+    const err: any = new Error(msg || `HTTP ${res.status}`);
+    err.status = res.status; err.path = path; err.method = method;
+    throw err;
+  }
+
+  if (res.status === 204) return undefined as unknown as T;
+
+  const ct = res.headers.get("content-type") || "";
+  if (ct.includes("application/json")) return res.json() as Promise<T>;
+  const txt = await res.text();
+  try { return JSON.parse(txt) as T; } catch {}
+  return txt as unknown as T;
+}
+
+/* ---------- Fallback helpers ---------- */
+const RETRY_STATUSES = new Set([400, 404, 405, 415, 422, 501]);
+
+async function tryReq<T>(
+  variants: Array<{ path: string; init: RequestInit }>
+): Promise<T> {
+  let lastErr: any = null;
+  for (const v of variants) {
+    try {
+      return await req<T>(v.path, v.init);
+    } catch (e: any) {
+      lastErr = e;
+      if (!RETRY_STATUSES.has(e?.status)) throw e;
+    }
+  }
+  throw lastErr || new Error("No variants worked");
+}
+
+/* ===================== Normalizers ======================== */
+function normalizeMe(raw: any): User {
+  const u = raw?.user ?? raw;
+  return {
+    id: u.id ?? u.user_id ?? u.uid ?? "",
+    email: u.email ?? u.mail ?? u.username ?? "",
+    name: u.name ?? u.fullName ?? u.full_name ?? u.displayName ?? undefined,
+  };
+}
+
+function normalizeAddr(raw: any): Address {
+  const r = Array.isArray(raw) ? raw[0] : raw;
+  return {
+    id: r.id ?? r._id ?? r.uuid ?? "",
+    firstName: r.firstName ?? r.first_name ?? "",
+    lastName: r.lastName ?? r.last_name ?? "",
+    street: r.street ?? r.address_line1 ?? "",
+    house: r.house ?? r.address_line2 ?? "",
+    zip: r.zip ?? r.postcode ?? r.post_code ?? "",
+    city: r.city ?? r.town ?? r.locality ?? "",
+    phone: r.phone ?? r.tel ?? "",
+    note: r.note ?? r.comment ?? "",
+    packType: r.packType ?? r.pack_type ?? "",
+    postNummer: r.postNummer ?? r.post_nummer ?? r.postNumber ?? "",
+    stationNr: r.stationNr ?? r.station_nr ?? r.stationNumber ?? "",
+    isDefault: !!(r.isDefault ?? r.is_default ?? r.default),
+  };
+}
+
+function extractAddrArray(payload: any): any[] {
+  if (!payload) return [];
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.items)) return payload.items;
+  if (Array.isArray(payload?.addresses)) return payload.addresses;
+  if (Array.isArray(payload?.data)) return payload.data;
+  return [];
+}
+
+/* ================= Payload builders (no duplicates!) ================= */
+type ZipKey = "zip" | "postcode";
+
+/** Удаляет undefined/null/пустые строки; false и 0 оставляем */
+function compact<T extends Record<string, any>>(obj: T): Partial<T> {
+  const out: Record<string, any> = {};
+  Object.entries(obj).forEach(([k, v]) => {
+    if (v === undefined || v === null) return;
+    if (typeof v === "string" && v.trim() === "") return;
+    out[k] = v;
+  });
+  return out as Partial<T>;
+}
+
+/** Строго snake_case, без camelCase дублей. */
+function snakePayload(a: Partial<Address>, zipKey: ZipKey) {
+  const hasPack = !!a.packType;
+  const base = {
+    first_name: a.firstName,
+    last_name: a.lastName,
+    street: a.street,
+    house: a.house,
+    city: a.city,
+    phone: a.phone,
+    note: a.note,
+    is_default: a.isDefault ? true : undefined,
+    pack_type: hasPack ? a.packType : undefined,
+    post_nummer: hasPack ? a.postNummer : undefined,
+    station_nr: hasPack ? a.stationNr : undefined,
+    // либо zip, либо postcode
+    [zipKey]: a.zip,
+  } as Record<string, any>;
+  // айди при создании не отправляем (сервер обычно сам генерит)
+  delete base.id;
+  return compact(base);
+}
+
+/** Строго camelCase, без snake_case. */
+function camelPayload(a: Partial<Address>) {
+  const hasPack = !!a.packType;
+  const base = {
+    firstName: a.firstName,
+    lastName: a.lastName,
+    street: a.street,
+    house: a.house,
+    city: a.city,
+    phone: a.phone,
+    note: a.note,
+    isDefault: a.isDefault ? true : undefined,
+    packType: hasPack ? a.packType : undefined,
+    postNummer: hasPack ? a.postNummer : undefined,
+    stationNr: hasPack ? a.stationNr : undefined,
+    zip: a.zip,
+  };
+  // айди при создании не отправляем
+  // (при update может быть, но мы в апдейте всё равно отправляем патч без id)
+  return compact(base);
+}
+
+function compactUser(u: Partial<User>) {
+  return compact({ name: u.name, email: u.email });
+}
+
+/* ========================= API =========================== */
+export const api = {
+  register: (name: string, email: string, password: string) =>
+    req<any>("/auth/register", { method: "POST", body: JSON.stringify({ name, email, password }) }),
+
+  login: (email: string, password: string) =>
+    req<any>("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) }),
+
+  me: async (): Promise<User> => normalizeMe(await req<any>("/auth/me")),
+
+  updateMe: async (patch: Partial<User>): Promise<User> => {
+    const bodies = [
+      compact({ name: patch.name, email: patch.email }),
+      compact({ full_name: patch.name, email: patch.email }),
+      compact({ displayName: patch.name, email: patch.email }),
+    ];
+
+    const variants: Array<{ path: string; init: RequestInit }> = [];
+    for (const b of bodies) variants.push({ path: "/auth/me",  init: { method: "PATCH", body: JSON.stringify(b) } });
+    for (const b of bodies) variants.push({ path: "/users/me", init: { method: "PATCH", body: JSON.stringify(b) } });
+    for (const b of bodies) variants.push({ path: "/profile",  init: { method: "PATCH", body: JSON.stringify(b) } });
+    // иногда PUT
+    for (const b of bodies) variants.push({ path: "/auth/me",  init: { method: "PUT",   body: JSON.stringify(b) } });
+
+    const res = await tryReq<any>(variants);
+    return normalizeMe(res);
+  },
+
+  products: () => req("/products"),
+  product: (slug: string) => req(`/products/${slug}`),
+  reviews: (productId: string) => req(`/reviews?product_id=${productId}`),
+
+  addresses: {
+    list: async (): Promise<Address[]> => {
+      const data = await req<any>("/addresses");
+      const arr = extractAddrArray(data);
+      const norm = arr.map(normalizeAddr);
+      // гарантируем одиночный дефолт
+      if (norm.some(a => a.isDefault)) {
+        let seen = false;
+        for (const a of norm) {
+          if (a.isDefault) {
+            if (seen) a.isDefault = false;
+            else seen = true;
+          }
+        }
+      }
+      return norm;
+    },
+
+    create: async (a: Address): Promise<Address> => {
+      // пробуем несколько формат/вариантов схемы
+      const variants = [
+        { path: "/addresses", init: { method: "POST", body: JSON.stringify(snakePayload(a, "zip")) } },
+        { path: "/addresses", init: { method: "POST", body: JSON.stringify(snakePayload(a, "postcode")) } },
+        { path: "/addresses", init: { method: "POST", body: JSON.stringify(camelPayload(a)) } },
+      ];
+      const res = await tryReq<any>(variants);
+      const created = res?.item ?? res?.data ?? res?.address ?? res;
+      return normalizeAddr(created);
+    },
+
+    update: async (id: string, patch: Partial<Address>): Promise<Address> => {
+      const bodies = [
+        JSON.stringify(snakePayload(patch, "zip")),
+        JSON.stringify(snakePayload(patch, "postcode")),
+        JSON.stringify(camelPayload(patch)),
+      ];
+
+      // PUT, затем PATCH, со всеми тремя телами
+      const variants: Array<{ path: string; init: RequestInit }> = [];
+      for (const b of bodies) variants.push({ path: `/addresses/${id}`, init: { method: "PUT", body: b } });
+      for (const b of bodies) variants.push({ path: `/addresses/${id}`, init: { method: "PATCH", body: b } });
+
+      const res = await tryReq<any>(variants);
+      const updated = res?.item ?? res?.data ?? res?.address ?? res;
+      return normalizeAddr(updated);
+    },
+
+    remove: async (id: string): Promise<void> => {
+      await req<void>(`/addresses/${id}`, { method: "DELETE" });
+    },
+
+    setDefault: async (id: string): Promise<void> => {
+      // основной вариант
+      try {
+        await req<void>(`/addresses/${id}/default`, { method: "POST" });
+        return;
+      } catch (e: any) {
+        if (!RETRY_STATUSES.has(e?.status)) throw e;
+      }
+      // запасные
+      try {
+        await req<void>("/addresses/default", {
+          method: "POST",
+          body: JSON.stringify({ id, is_default: true }),
+        });
+        return;
+      } catch (e: any) {
+        if (!RETRY_STATUSES.has(e?.status)) throw e;
+      }
+      await req<void>(`/addresses/${id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ is_default: true }),
+      });
+    },
+  },
+};
+
+// src/layouts/MainLayout.tsx
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import styles from "./MainLayout.module.scss";
+
+const MainLayout: React.FC<React.PropsWithChildren> = ({ children }) => {
+   const bare =
+    typeof window !== "undefined" &&
+    window.location.pathname.startsWith("/auth");
+  return (
+    <div className={styles.shell}>
+      {!bare && <Header />}
+      <main className={styles.main}>{children}</main>
+      {!bare && <Footer />}
+    </div>
+  );
+};
+
+export default MainLayout;
+
+// src/hooks/useLocalStorage.ts
+import { useEffect, useState } from "react";
+
+export function useLocalStorage<T>(key: string, initial: T) {
+  const [val, setVal] = useState<T>(() => {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? (JSON.parse(raw) as T) : initial;
+    } catch { return initial; }
+  });
+  useEffect(() => {
+    localStorage.setItem(key, JSON.stringify(val));
+  }, [key, val]);
+  return [val, setVal] as const;
+}
+
+// src/data/reviews.ts
+import type { Review } from "@/types";
+
+export const seedReviews: Review[] = [
+  {
+    id: "r-1",
+    productId: "p-1",
+    author: "Артём",
+    rating: 5,
+    text: "Gut.",
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 9).toISOString(),
+    helpful: 4,
+  },
+  {
+    id: "r-2",
+    productId: "p-3",
+    author: "Марина",
+    rating: 4,
+    text: "Gut.",
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
+    helpful: 2,
+  },
+  {
+    id: "r-3",
+    productId: "p-2",
+    author: "Денис",
+    rating: 5,
+    text: "Gut.",
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
+    helpful: 3,
+  },
+];
+
+// src/data/products.ts
+export type Product = {
+  id: string;
+  slug: string;
+  title: string;
+  category: "Косметология" | "Витамины"; // 1-й уровень
+  sub?: string;   // 2-й уровень (например: "Аудио")
+  leaf?: string;  // 3-й уровень (например: "Наушники")
+  price: number;
+  rating: number;
+  short: string;
+  description: string;
+  imageUrl?: string;
+};
+
+export const products: Product[] = [
+  {
+    id: "p-1",
+    slug: "multivitamins-sport",
+    title: "Sports Research, Phytoceramides Mini-Gels, 350 mg, 30 Softgels",
+    category: "Витамины",
+    sub: "Мультивитамины",
+    leaf: "Sport",
+    price: 23.71,
+    rating: 4.5,
+    short: "Комплекс витаминов для поддержания здоровья.",
+    description: "350 mg Per Serving Supports Skin Hydration CeratiQ® Dietary Supplement Quality Matters: Igen Non-GMO Tested Gluten Free Third Party Tested cGMP Compliant SR® Phytoceramides with Lipowheat® is rich in glycosylceramides, phytoceramides and glycolipids, which may help support skin hydration when taken directed.",
+    imageUrl: "https://cloudinary.images-iherb.com/image/upload/f_auto,q_auto:eco/images/sre/sre00412/v/55.jpg"
+  },
+  {
+    id: "p-2",
+    slug: "multivitamins-sport",
+    title: "Sports Research, Phytoceramides Mini-Gels, 350 mg, 30 Softgels",
+    category: "Витамины",
+    sub: "Мультивитамины",
+    leaf: "Sport",
+    price: 23.71,
+    rating: 4.5,
+    short: "Комплекс витаминов для поддержания здоровья.",
+    description: "350 mg Per Serving Supports Skin Hydration CeratiQ® Dietary Supplement Quality Matters: Igen Non-GMO Tested Gluten Free Third Party Tested cGMP Compliant SR® Phytoceramides with Lipowheat® is rich in glycosylceramides, phytoceramides and glycolipids, which may help support skin hydration when taken directed.",
+    imageUrl: "https://cloudinary.images-iherb.com/image/upload/f_auto,q_auto:eco/images/sre/sre00412/v/55.jpg"
+  },
+  {
+    id: "p-3",
+    slug: "multivitamins",
+    title: "Sports Research, Phytoceramides Mini-Gels, 350 mg, 30 Softgels",
+    category: "Витамины",
+    sub: "Мультивитамины",
+    leaf: "Sport",
+    price: 23.71,
+    rating: 4.5,
+    short: "Комплекс витаминов для поддержания здоровья.",
+    description: "350 mg Per Serving Supports Skin Hydration CeratiQ® Dietary Supplement Quality Matters: Igen Non-GMO Tested Gluten Free Third Party Tested cGMP Compliant SR® Phytoceramides with Lipowheat® is rich in glycosylceramides, phytoceramides and glycolipids, which may help support skin hydration when taken directed.",
+    imageUrl: "https://cloudinary.images-iherb.com/image/upload/f_auto,q_auto:eco/images/sre/sre00412/v/55.jpg"
+  },
+  {
+    id: "p-4",
+    slug: "multivitamins",
+    title: "Sports Research, Phytoceramides Mini-Gels, 350 mg, 30 Softgels",
+    category: "Витамины",
+    sub: "Мультивитамины",
+    leaf: "Sport",
+    price: 23.71,
+    rating: 4.5,
+    short: "Комплекс витаминов для поддержания здоровья.",
+    description: "350 mg Per Serving Supports Skin Hydration CeratiQ® Dietary Supplement Quality Matters: Igen Non-GMO Tested Gluten Free Third Party Tested cGMP Compliant SR® Phytoceramides with Lipowheat® is rich in glycosylceramides, phytoceramides and glycolipids, which may help support skin hydration when taken directed.",
+    imageUrl: "https://cloudinary.images-iherb.com/image/upload/f_auto,q_auto:eco/images/sre/sre00412/v/55.jpg"
+  },
+  {
+    id: "p-5",
+    slug: "multivitamins",
+    title: "Sports Research, Phytoceramides Mini-Gels, 350 mg, 30 Softgels",
+    category: "Витамины",
+    sub: "Мультивитамины",
+    leaf: "Sport",
+    price: 23.71,
+    rating: 4.5,
+    short: "Комплекс витаминов для поддержания здоровья.",
+    description: "350 mg Per Serving Supports Skin Hydration CeratiQ® Dietary Supplement Quality Matters: Igen Non-GMO Tested Gluten Free Third Party Tested cGMP Compliant SR® Phytoceramides with Lipowheat® is rich in glycosylceramides, phytoceramides and glycolipids, which may help support skin hydration when taken directed.",
+    imageUrl: "https://cloudinary.images-iherb.com/image/upload/f_auto,q_auto:eco/images/sre/sre00412/v/55.jpg"
+  }
+];
+
+// src/data/categories.ts
+export type CategoryNode = {
+  title: string;
+  slug: string;
+  children?: CategoryNode[];
+};
+
+export const categories: CategoryNode[] = [
+  {
+    title: "Косметология",
+    slug: "cosmetology",
+    children: [
+      {
+        title: "Уход за лицом",
+        slug: "face-care",
+        children: [
+          { title: "Кремы", slug: "creams" },
+          { title: "Маски", slug: "masks" }
+        ]
+      },
+      {
+        title: "Уход за волосами",
+        slug: "hair-care",
+        children: [
+          { title: "Шампуни", slug: "shampoos" },
+          { title: "Бальзамы", slug: "balms" }
+        ]
+      },
+      {
+        title: "Уход за телом",
+        slug: "body-care",
+        children: [
+          { title: "Лосьоны", slug: "lotions" },
+          { title: "Скрабы", slug: "scrubs" }
+        ]
+      }
+    ]
+  },
+  {
+    title: "Витамины",
+    slug: "vitamins",
+    children: [
+      { title: "Витамин C", slug: "vitamin-c" },
+      { title: "Витамин D", slug: "vitamin-d" },
+      {
+        title: "Мультивитамины", slug: "multivitamins",
+        children: [
+          { title: "Sport", slug: "multivitamins-sport" },
+        ]
+      }
+    ]
+  }
+];
+
+// src/contexts/ThemeContext.tsx
+import React, { createContext, useContext, useEffect, useLayoutEffect, useState } from "react";
+
+type Theme = "light" | "dark";
+type ThemeCtx = { theme: Theme; toggle: () => void; set: (t: Theme) => void };
+
+const Ctx = createContext<ThemeCtx | null>(null);
+const STORAGE_KEY = "pm.theme";
+
+function getInitialTheme(): Theme {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY) as Theme | null;
+    if (saved === "light" || saved === "dark") return saved;
+  } catch {}
+  // если нет сохранённого — берём системную
+  if (typeof window !== "undefined" && window.matchMedia) {
+    return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  }
+  return "dark";
+}
+
+export const ThemeProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
+  const [theme, setTheme] = useState<Theme>(getInitialTheme);
+
+  // навешиваем атрибут сразу, чтобы не мигало
+  useLayoutEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+  }, []); // один раз на монт
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    try { localStorage.setItem(STORAGE_KEY, theme); } catch {}
+  }, [theme]);
+
+  const value: ThemeCtx = {
+    theme,
+    toggle: () => setTheme((t) => (t === "dark" ? "light" : "dark")),
+    set: (t) => setTheme(t),
+  };
+
+  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+};
+
+export function useTheme() {
+  const ctx = useContext(Ctx);
+  if (!ctx) throw new Error("useTheme must be used within ThemeProvider");
+  return ctx;
+}
+
+// src/contexts/ProductsContext.tsx
+import React, { createContext, useContext, useMemo, useState } from "react";
+import { products as seed, Product } from "@/data/products";
+
+export type SortKey = "popular" | "price-asc" | "price-desc";
+
+export type ProductsState = {
+  products: Product[];
+
+  search: string;
+  setSearch: (q: string) => void;
+
+  category: string;                    // базовый селект (если не используется filterPath)
+  setCategory: (c: string) => void;
+
+  sort: SortKey;
+  setSort: (s: SortKey) => void;
+
+  filterPath: string[];                // [Категория, Подкатегория?, Лист?]
+  setFilterPath: (p: string[]) => void;
+
+  // фильтры цены/рейтинга
+  priceFrom: number;
+  priceTo: number;
+  setPriceFrom: (n: number) => void;
+  setPriceTo: (n: number) => void;
+  priceBounds: { min: number; max: number };
+
+  ratingMin: number;                   // 0..5
+  setRatingMin: (n: number) => void;
+
+  resetFilters: () => void;
+};
+
+const Ctx = createContext<ProductsState | null>(null);
+
+// глобальные границы цен по сидовым данным
+const PRICE_MIN = Math.min(...seed.map(p => p.price));
+const PRICE_MAX = Math.max(...seed.map(p => p.price));
+
+export const ProductsProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("Все");
+  const [sort, setSort] = useState<SortKey>("popular");
+  const [filterPath, setFilterPath] = useState<string[]>([]);
+
+  const [priceFrom, setPriceFrom] = useState<number>(PRICE_MIN);
+  const [priceTo, setPriceTo] = useState<number>(PRICE_MAX);
+  const priceBounds = { min: PRICE_MIN, max: PRICE_MAX };
+
+  const [ratingMin, setRatingMin] = useState<number>(0);
+
+  const products = useMemo(() => {
+    let list = seed.slice();
+
+    // путь из модалки категорий имеет приоритет
+    if (filterPath.length > 0) {
+      const [c, s, l] = filterPath;
+      list = list.filter(p =>
+        (!c || p.category === c) &&
+        (!s || p.sub === s) &&
+        (!l || p.leaf === l)
+      );
+    } else if (category !== "Все") {
+      list = list.filter(p => p.category === category);
+    }
+
+    // поиск
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(
+        p =>
+          p.title.toLowerCase().includes(q) ||
+          p.short.toLowerCase().includes(q) ||
+          p.description.toLowerCase().includes(q)
+      );
+    }
+
+    // цена
+    list = list.filter(p => p.price >= priceFrom && p.price <= priceTo);
+
+    // рейтинг
+    if (ratingMin > 0) {
+      list = list.filter(p => p.rating >= ratingMin);
+    }
+
+    // сортировка
+    switch (sort) {
+      case "price-asc":  list.sort((a, b) => a.price - b.price); break;
+      case "price-desc": list.sort((a, b) => b.price - a.price); break;
+      default:           list.sort((a, b) => b.rating - a.rating); break;
+    }
+
+    return list;
+  }, [search, category, sort, filterPath, priceFrom, priceTo, ratingMin]);
+
+  const resetFilters = () => {
+    setSearch("");
+    setCategory("Все");
+    setSort("popular");
+    setFilterPath([]);
+    setPriceFrom(PRICE_MIN);
+    setPriceTo(PRICE_MAX);
+    setRatingMin(0);
+  };
+
+  return (
+    <Ctx.Provider
+      value={{
+        products,
+        search, setSearch,
+        category, setCategory,
+        sort, setSort,
+        filterPath, setFilterPath,
+        priceFrom, setPriceFrom,
+        priceTo, setPriceTo,
+        priceBounds,
+        ratingMin, setRatingMin,
+        resetFilters
+      }}
+    >
+      {children}
+    </Ctx.Provider>
+  );
+};
+
+export const useProducts = () => {
+  const ctx = useContext(Ctx);
+  if (!ctx) throw new Error("useProducts must be used within ProductsProvider");
+  return ctx;
+};
+
+// src/contexts/CartContext.tsx
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { Product } from "@/data/products";
+
+export type CartItem = {
+  id: string;
+  qty: number;
+  price: number;
+  title: string;
+  slug: string;
+  imageUrl?: string;
+};
+
+type CartState = {
+  items: CartItem[];
+  add: (product: Product, qty?: number) => void;
+  remove: (id: string) => void;
+  setQty: (id: string, qty: number) => void;
+  clear: () => void;
+  total: number;
+  totalQty: number;
+};
+
+const CartCtx = createContext<CartState | null>(null);
+
+const LS_KEY = "pm.cart.v1";
+
+export const CartProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
+  const [items, setItems] = useState<CartItem[]>(() => {
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      return raw ? (JSON.parse(raw) as CartItem[]) : [];
+    } catch { return []; }
+  });
+
+  useEffect(() => {
+    localStorage.setItem(LS_KEY, JSON.stringify(items));
+  }, [items]);
+
+  const value = useMemo<CartState>(() => {
+    const add = (product: Product, qty = 1) => {
+      setItems(prev => {
+        const idx = prev.findIndex(i => i.id === product.id);
+        if (idx >= 0) {
+          const next = [...prev];
+          next[idx] = { ...next[idx], qty: next[idx].qty + qty };
+          return next;
+        }
+        return [...prev, { id: product.id, qty, price: product.price, title: product.title, slug: product.slug, imageUrl: product.imageUrl }];
+      });
+    };
+    const remove = (id: string) => setItems(prev => prev.filter(i => i.id != id));
+    const setQty = (id: string, qty: number) => setItems(prev => prev.map(i => i.id === id ? { ...i, qty } : i));
+    const clear = () => setItems([]);
+    const total = items.reduce((s, i) => s + i.price * i.qty, 0);
+    const totalQty = items.reduce((s, i) => s + i.qty, 0);
+    return { items, add, remove, setQty, clear, total, totalQty };
+  }, [items]);
+
+  return <CartCtx.Provider value={value}>{children}</CartCtx.Provider>;
+};
+
+export const useCart = () => {
+  const ctx = useContext(CartCtx);
+  if (!ctx) throw new Error("useCart must be used within CartProvider");
+  return ctx;
+};
+
+// src/contexts/AuthContext.tsx
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { api, getToken, setToken, clearToken } from "@/lib/api";
+
+export type User = { id: string; name?: string; email: string };
+
+type AuthState = {
+  user: User | null;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string) => Promise<void>;
+  logout: () => void;
+  setUser: (u: User) => void; // локальное обновление профиля
+  updateProfile: (patch: Partial<User>) => Promise<void>;
+};
+
+const Ctx = createContext<AuthState | null>(null);
+
+export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // bootstrap
+  useEffect(() => {
+    let dead = false;
+    (async () => {
+      setLoading(true);
+      try {
+        // ❗ Всегда пробуем: сработает и для cookie-сессии
+        const me = await api.me();
+        if (!dead) setUser({ id: me.id, name: me.name, email: me.email });
+      } catch {
+        clearToken();           // на всякий случай чистим старый JWT, если был
+        if (!dead) setUser(null);
+      } finally {
+        if (!dead) setLoading(false);
+      }
+    })();
+    return () => { dead = true; };
+  }, []);
+
+  const value = useMemo<AuthState>(() => ({
+    user,
+    loading,
+    login: async (email: string, password: string) => {
+      const resp = await api.login(email, password) as any;
+      const tok = resp?.access_token || resp?.token || null;
+      if (tok) setToken(tok); else clearToken();
+      const me = await api.me();
+      setUser({ id: me.id, name: me.name, email: me.email });
+    },
+    register: async (name: string, email: string, password: string) => {
+      const resp = await api.register(name, email, password) as any;
+      const tok = resp?.access_token || resp?.token || null;
+      if (tok) setToken(tok); else clearToken();
+      const me = await api.me();
+      setUser({ id: me.id, name: me.name, email: me.email });
+    },
+    logout: () => { clearToken(); setUser(null); },
+    setUser: (u: User) => setUser(u),
+    updateProfile: async (patch) => {
+      // оптимистично можно сразу обновить локально
+      setUser((u) => (u ? { ...u, ...patch } as User : u));
+      try {
+        const updated = await api.updateMe(patch);
+        setUser({ id: updated.id, name: updated.name, email: updated.email });
+      } catch (e) {
+        // если сервер не принял — откатить нельзя без снапшота; можно просто проглотить/показать тост
+        throw e;
+      }
+    },
+  }), [user, loading]);
+
+  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+};
+
+export const useAuth = () => {
+  const ctx = useContext(Ctx);
+  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  return ctx;
+};
+
+// src/components/ThemeToggle.tsx
+import Icon from "./Icon";
+import styles from "./ThemeToggle.module.scss";
+import { useTheme } from "@/contexts/ThemeContext";
+
+export default function ThemeToggle() {
+  const { theme, toggle } = useTheme();
+  const isLight = theme === "light";
+
+  return (
+    <button
+      className={styles.toggle}
+      onClick={toggle}
+      aria-label={isLight ? "Переключить на тёмную тему" : "Переключить на светлую тему"}
+      title={isLight ? "Dark" : "Light"}
+    >
+      <span className={styles.icon} aria-hidden>
+        {isLight ? <Icon name="moon" /> : <Icon name="sun" />}
+      </span>
+      <span className={styles.label}>{isLight ? "Dark" : "Light"}</span>
+    </button>
+  );
+}
+
+// src/components/SearchOverlay.tsx
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import styles from "./SearchOverlay.module.scss";
+import { products as seed } from "@/data/products";
+import { useProducts } from "@/contexts/ProductsContext";
+import { Link, navigate } from "@/router/Router";
+import Icon from "./Icon";
+
+type Props = {
+  isOpen: boolean;
+  onClose: () => void;
+  initialQuery?: string;
+};
+
+const getRoot = () => {
+  if (typeof document === "undefined") return null;
+  let el = document.getElementById("pm-modal-root");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "pm-modal-root";
+    document.body.appendChild(el);
+  }
+  return el;
+};
+
+const fmtEUR = (n: number) =>
+  n.toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+
+export default function SearchOverlay({ isOpen, onClose, initialQuery = "" }: Props) {
+  // не монтируем в DOM, если закрыт
+  if (!isOpen) return null;
+
+  const { setSearch, setFilterPath } = useProducts();
+  const [q, setQ] = useState(initialQuery);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  // автофокус и установка стартового значения
+  useEffect(() => {
+    setQ(initialQuery || "");
+    const id = requestAnimationFrame(() => inputRef.current?.focus());
+    return () => cancelAnimationFrame(id);
+  }, [initialQuery]);
+
+  // ESC для закрытия
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  // блок скролла (надёжно: html + body) и корректный откат
+  useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    const prevHtmlOverflow = html.style.overflow;
+    const prevBodyOverflow = body.style.overflow;
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    return () => {
+      html.style.overflow = prevHtmlOverflow || "";
+      body.style.overflow = prevBodyOverflow || "";
+    };
+  }, []);
+
+  const results = useMemo(() => {
+    const qq = q.trim().toLowerCase();
+    if (!qq) return [];
+    return seed
+      .filter(p =>
+        p.title.toLowerCase().includes(qq) ||
+        p.short.toLowerCase().includes(qq) ||
+        p.description.toLowerCase().includes(qq)
+      )
+      .sort((a, b) => b.rating - a.rating)
+      .slice(0, 10);
+  }, [q]);
+
+  const openAll = () => {
+    setFilterPath([]); // сбрасываем путь
+    setSearch(q);      // прокидываем поисковый текст
+    onClose();
+    navigate("/catalog");
+  };
+
+  const content = (
+    <div className={styles.root} role="dialog" aria-modal="true" aria-label="Поиск по каталогу">
+      <div className={styles.backdrop} onClick={onClose} />
+
+      {/* сцена: хиро (адаптивная высота) + скроллируемые результаты */}
+      <div className={styles.stage}>
+        {/* HERO */}
+        <section className={styles.hero}>
+          <div className={styles.inner}>
+            <form className={styles.searchForm} onSubmit={(e) => { e.preventDefault(); openAll(); }}>
+              <div className={styles.searchBox}>
+                <input
+                  ref={inputRef}
+                  className={styles.searchInput + " input"}
+                  placeholder="Поиск по товарам…"
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  aria-label="Поиск"
+                />
+                {!!q && (
+                  <div
+                    className={styles.clearBtn}
+                    onClick={() => setQ("")}
+                    aria-label="Очистить"
+                  >
+                    <Icon name="close" size="1.1rem" />
+                  </div>
+                )}
+              </div>
+
+              <button type="submit" className="btn btnPrimary">Все результаты</button>
+            </form>
+
+            {/* подсказки */}
+            <div className={styles.trends}>
+              <span className={styles.trendLabel}>Популярное:</span>
+              {["Витамины", "Omega-3", "Уход", "Gels"].map(t => (
+                <button
+                  key={t}
+                  type="button"
+                  className={styles.trend}
+                  onClick={() => setQ(t)}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Кнопка закрытия — не перекрывает инпут */}
+          <div
+            className={styles.closeBtn + ""}
+            onClick={onClose}
+            aria-label="Закрыть"
+          >
+            <Icon name="close" size="1.8rem" />
+          </div>
+        </section>
+
+        {/* РЕЗУЛЬТАТЫ */}
+        <section className={styles.results}>
+          <div className={styles.inner}>
+            {!q && (
+              <div className={styles.hint}>
+                Введите запрос: название товара, категорию или часть описания.
+              </div>
+            )}
+
+            {q && results.length === 0 && (
+              <div className={styles.empty}>
+                Ничего не найдено. <button className="btn" onClick={openAll}>Открыть каталог</button>
+              </div>
+            )}
+
+            {results.length > 0 && (
+              <>
+                <ul className={styles.list} role="listbox" aria-label="Результаты поиска">
+                  {results.map(p => (
+                    <li key={p.id} className={styles.item}>
+                      <Link to={`/product/${p.slug}`} className={styles.itemLink} onClick={onClose}>
+                        <div className={styles.thumb}>
+                          <img src={p.imageUrl} alt={p.title} />
+                        </div>
+                        <div className={styles.meta}>
+                          <div className={styles.titleRow}>
+                            <span className={styles.title}>{p.title}</span>
+                            <span className="badge">{p.category}</span>
+                          </div>
+                          <div className={styles.short}>{p.short}</div>
+                          <div className={styles.row}>
+                            <span className={styles.price}>{fmtEUR(p.price)}</span>
+                            <span className={styles.rating}>★ {p.rating}</span>
+                          </div>
+                        </div>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+
+                <div className={styles.footerBar}>
+                  <button className="btn btnPrimary" onClick={openAll}>
+                    Показать все результаты
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+
+  const root = getRoot();
+  return root ? createPortal(content, root) : content;
+}
+
+// src/components/Reviews.tsx
+import React, { useEffect, useMemo, useState } from "react";
+import styles from "./Reviews.module.scss";
+import { seedReviews } from "@/data/reviews";
+import type { Review } from "@/types";
+
+type Props = { productId: string };
+
+const LS_KEY = "pm.reviews.v1";
+const LS_VOTES = "pm.reviews.votes.v1";
+
+function loadAll(): Review[] {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) return JSON.parse(raw) as Review[];
+  } catch {}
+  // если пусто — засеять дефолт
+  localStorage.setItem(LS_KEY, JSON.stringify(seedReviews));
+  return seedReviews;
+}
+
+function saveAll(list: Review[]) {
+  localStorage.setItem(LS_KEY, JSON.stringify(list));
+}
+
+function loadVotes(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(LS_VOTES) || "[]");
+  } catch {
+    return [];
+  }
+}
+function saveVotes(ids: string[]) {
+  localStorage.setItem(LS_VOTES, JSON.stringify(ids));
+}
+
+const Stars: React.FC<{ value: number; size?: "sm" | "md"; onChange?: (v: 1|2|3|4|5)=>void; interactive?: boolean }> = ({ value, size="md", onChange, interactive }) => {
+  const arr = [1,2,3,4,5] as const;
+  return (
+    <div className={`${styles.stars} ${styles[size]}`} role={interactive ? "radiogroup" : undefined}>
+      {arr.map(n => (
+        <button
+          key={n}
+          type="button"
+          aria-label={`${n} из 5`}
+          aria-checked={value >= n}
+          className={value >= n ? styles.starOn : styles.starOff}
+          onClick={interactive && onChange ? () => onChange(n) : undefined}
+        >
+          ★
+        </button>
+      ))}
+    </div>
+  );
+};
+
+export default function Reviews({ productId }: Props) {
+  const [all, setAll] = useState<Review[]>(() => loadAll());
+  const [votes, setVotes] = useState<string[]>(() => loadVotes());
+  const list = useMemo(() => all.filter(r => r.productId === productId), [all, productId]);
+
+  // агрегаты
+  const stats = useMemo(() => {
+    const total = list.length;
+    const sum = list.reduce((s, r) => s + r.rating, 0);
+    const avg = total ? +(sum / total).toFixed(2) : 0;
+    const dist: Record<1|2|3|4|5, number> = {1:0,2:0,3:0,4:0,5:0};
+    list.forEach(r => { dist[r.rating as 1|2|3|4|5]++; });
+    return { total, avg, dist };
+  }, [list]);
+
+  // управление: сорт/фильтр/пагинация
+  const [sort, setSort] = useState<"new"|"helpful"|"rating_desc"|"rating_asc">("new");
+  const [onlyRating, setOnlyRating] = useState<0|1|2|3|4|5>(0);
+  const [limit, setLimit] = useState(4);
+
+  const shown = useMemo(() => {
+    let arr = list.slice();
+    if (onlyRating) arr = arr.filter(r => r.rating === onlyRating);
+    switch (sort) {
+      case "helpful": arr.sort((a,b)=> b.helpful - a.helpful || +new Date(b.createdAt) - +new Date(a.createdAt)); break;
+      case "rating_desc": arr.sort((a,b)=> b.rating - a.rating || +new Date(b.createdAt) - +new Date(a.createdAt)); break;
+      case "rating_asc": arr.sort((a,b)=> a.rating - b.rating || +new Date(b.createdAt) - +new Date(a.createdAt)); break;
+      default: arr.sort((a,b)=> +new Date(b.createdAt) - +new Date(a.createdAt)); break;
+    }
+    return arr.slice(0, limit);
+  }, [list, sort, onlyRating, limit]);
+
+  // голос "полезно"
+  const vote = (id: string) => {
+    if (votes.includes(id)) return;
+    const next = all.map(r => r.id === id ? { ...r, helpful: r.helpful + 1 } : r);
+    setAll(next); saveAll(next);
+    const nv = [...votes, id]; setVotes(nv); saveVotes(nv);
+  };
+
+  // форма добавления
+  const [name, setName] = useState("");
+  const [rating, setRating] = useState<1|2|3|4|5>(5);
+  const [text, setText] = useState("");
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || !text.trim()) return;
+    const review: Review = {
+      id: crypto.randomUUID(),
+      productId,
+      author: name.trim(),
+      rating,
+      text: text.trim(),
+      createdAt: new Date().toISOString(),
+      helpful: 0,
+    };
+    const next = [review, ...all];
+    setAll(next); saveAll(next);
+    setName(""); setText(""); setRating(5);
+    if (onlyRating && onlyRating !== rating) setOnlyRating(0);
+  };
+
+  useEffect(() => {
+    // если список пуст и нет seed по этому товару — ничего не делаем.
+  }, [productId]);
+
+  return (
+    <section className={styles.wrap}>
+      <div className={styles.head}>
+        <div className={styles.score}>
+          <div className={styles.avg}>{stats.avg.toFixed(1)}</div>
+          <Stars value={Math.round(stats.avg)} size="md" />
+          <div className={styles.total}>{stats.total} отзывов</div>
+        </div>
+
+        <ul className={styles.dist}>
+          {[5,4,3,2,1].map((n) => {
+            const count = stats.dist[n as 1|2|3|4|5] || 0;
+            const pct = stats.total ? Math.round((count / stats.total) * 100) : 0;
+            return (
+              <li key={n} className={styles.distRow}>
+                <button
+                  className={`${styles.badge} ${onlyRating === n ? styles.badgeActive : ""}`}
+                  onClick={() => setOnlyRating(onlyRating === (n as any) ? 0 : (n as any))}
+                >
+                  {n}★
+                </button>
+                <div className={styles.bar}>
+                  <span style={{ width: `${pct}%` }} />
+                </div>
+                <span className={styles.count}>{count}</span>
+              </li>
+            );
+          })}
+        </ul>
+
+        <div className={styles.controls}>
+          <select className="input" value={sort} onChange={e => setSort(e.target.value as any)}>
+            <option value="new">Сначала новые</option>
+            <option value="helpful">Сначала полезные</option>
+            <option value="rating_desc">С высокой оценкой</option>
+            <option value="rating_asc">С низкой оценкой</option>
+          </select>
+        </div>
+      </div>
+
+      <div className={styles.list}>
+        {shown.map(r => (
+          <article key={r.id} className={`card-item ${styles.item}`}>
+            <header className={styles.itemHead}>
+              <div className={styles.author}>{r.author}</div>
+              <div className={styles.meta}>
+                <Stars value={r.rating} size="sm" />
+                <span className={styles.date}>{new Date(r.createdAt).toLocaleDateString()}</span>
+              </div>
+            </header>
+            <p className={styles.text}>{r.text}</p>
+            <footer className={styles.itemFoot}>
+              <button
+                className="btn"
+                onClick={() => vote(r.id)}
+                disabled={votes.includes(r.id)}
+                aria-label="Отзыв был полезен"
+                title="Отзыв был полезен"
+              >
+                👍 Полезно {r.helpful}
+              </button>
+            </footer>
+          </article>
+        ))}
+        {list.length === 0 && (
+          <div className="card" style={{ padding: ".8rem" }}>
+            Пока нет отзывов — будьте первым!
+          </div>
+        )}
+      </div>
+
+      {shown.length < list.length && (
+        <div className={styles.moreRow}>
+          <button className="btn" onClick={() => setLimit(l => l + 4)}>Показать ещё</button>
+        </div>
+      )}
+
+      <form className={`card ${styles.form}`} onSubmit={submit}>
+        <h4 className={styles.formTitle}>Добавить отзыв</h4>
+        <div className={styles.ratingRow}>
+          <span>Ваша оценка:</span>
+          <Stars value={rating} size="md" interactive onChange={setRating} />
+        </div>
+        <input
+          className="input"
+          placeholder="Имя"
+          value={name}
+          onChange={e => setName(e.target.value)}
+          required
+        />
+        <textarea
+          placeholder="Ваш отзыв"
+          rows={4}
+          value={text}
+          onChange={e => setText(e.target.value)}
+          required
+        />
+        <button className="btn btnPrimary" type="submit">Опубликовать</button>
+      </form>
+    </section>
+  );
+}
+
+// src/components/ProductsRail.tsx
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import styles from "./ProductsRail.module.scss";
+import { Product } from "@/data/products";
+import ProductCard from "@/components/ProductCard";
+import Icon from "./Icon";
+
+type Props = {
+  title?: string;
+  items: Product[];
+  excludeId?: string;
+  showControls?: boolean; // NEW: стрелки даже без title
+};
+
+export default function ProductsRail({ title, items, excludeId, showControls = true }: Props) {
+  const list = useMemo(
+    () => (excludeId ? items.filter((p) => p.id !== excludeId) : items),
+    [items, excludeId]
+  );
+
+  if (!list.length) return null;
+
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [canL, setCanL] = useState(false);
+  const [canR, setCanR] = useState(false);
+
+  const updateArrows = () => {
+    const el = ref.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setCanL(scrollLeft > 2);
+    setCanR(scrollLeft + clientWidth < scrollWidth - 2);
+  };
+
+  useEffect(() => {
+    updateArrows();
+    const el = ref.current;
+    if (!el) return;
+    const onScroll = () => updateArrows();
+    el.addEventListener("scroll", onScroll, { passive: true });
+    const ro = new ResizeObserver(updateArrows);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      ro.disconnect();
+    };
+  }, []);
+
+  // если список поменялся — пересчитать состояние стрелок
+  useEffect(() => {
+    updateArrows();
+  }, [list.length]);
+
+  const scrollBy = (dir: 1 | -1) => {
+    const el = ref.current;
+    if (!el) return;
+    const delta = Math.round(el.clientWidth * 0.9) * dir;
+    el.scrollBy({ left: delta, behavior: "smooth" });
+  };
+
+  return (
+    <section className={styles.wrap}>
+      {(title || showControls) && (
+        <div className={styles.head}>
+          <h3>{title}</h3>
+          {showControls && (
+            <div className={styles.controls}>
+              <button className={styles.btnIcon} onClick={() => scrollBy(-1)} disabled={!canL} aria-label="Назад">
+                <Icon name="arrow-left" size="1.8rem" />
+              </button>
+              <button className={styles.btnIcon} onClick={() => scrollBy(1)} disabled={!canR} aria-label="Вперёд">
+                <Icon name="arrow-right" size="1.8rem" />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className={styles.viewport}>
+        <div className={styles.gradientLeft} aria-hidden />
+        <div className={styles.gradientRight} aria-hidden />
+
+        <div ref={ref} className={styles.track}>
+          {list.map((p) => (
+            <div key={p.id} className={styles.item}>
+              <ProductCard product={p} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// src/components/ProductCard.tsx
+import { Link } from "@/router/Router";
+import styles from "./ProductCard.module.scss";
+import { useCart } from "@/contexts/CartContext";
+import type { Product } from "@/types";
+import { fmtEUR } from "@/utils/money";
+
+export default function ProductCard({ product }: { product: Product }) {
+  const { add } = useCart();
+  return (
+    <div className={`${styles.card}`}>
+      <Link to={`/product/${product.slug}`} className={styles.thumb} aria-label={product.title}>
+        <div className={styles.img} role="img" aria-label={product.title}>
+          <img src={product.imageUrl} alt={product.title} />
+        </div>
+      </Link>
+      <div className={styles.body}>
+        <div className={styles.titleRow}>
+          <Link to={`/product/${product.slug}`} className={styles.title}>{product.title}</Link>
+          <div>
+            <span className="badge">{product.category}</span>
+          </div>
+        </div>
+        <p className={styles.desc}>{product.short}</p>
+        <div className={styles.bar}>
+          <div className={styles.price}>{fmtEUR(product.price)}</div>
+          <button className="btn btnPrimary" onClick={() => add(product)}>
+            В корзину
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// src/components/Modal.tsx
+import React, { useEffect } from "react";
+import { createPortal } from "react-dom";
+import styles from "./Modal.module.scss";
+import Icon from "./Icon";
+
+type Side = "right" | "left" | "bottom";
+
+type Props = {
+  isOpen: boolean;
+  onClose: () => void;
+  title?: string;
+  width?: number;     // px (для left/right)
+  side?: Side;
+  children: React.ReactNode;
+};
+
+// создаём/находим корень для порталов
+const getModalRoot = () => {
+  if (typeof document === "undefined") return null;
+  let el = document.getElementById("pm-modal-root");
+  if (!el) {
+    el = document.createElement("div");
+    el.id = "pm-modal-root";
+    document.body.appendChild(el);
+  }
+  return el;
+};
+
+export default function Modal({
+  isOpen,
+  onClose,
+  title,
+  width = 360,
+  side = "right",
+  children,
+}: Props) {
+  // Esc для закрытия
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  // блокируем прокрутку при открытии
+  useEffect(() => {
+    if (!isOpen) return;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+    document.documentElement.style.overflow = "hidden";
+    return () => { document.documentElement.style.overflow = prevHtmlOverflow; };
+  }, [isOpen]);
+
+  const content = (
+    <div className={styles.root} data-open={isOpen ? "true" : "false"} aria-hidden={!isOpen}>
+      <div className={styles.backdrop} onClick={onClose} />
+      <aside
+        className={styles.drawer}
+        style={{ width: side === "bottom" ? undefined : width }}
+        data-side={side}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+      >
+        <div className={styles.head}>
+          <div className={styles.title}>{title}</div>
+          <div className={styles.btnIcon} onClick={onClose} aria-label="Закрыть">
+            <Icon name="close" size="1.8rem" />
+          </div>
+        </div>
+        <div className={styles.body}>{children}</div>
+      </aside>
+    </div>
+  );
+
+  const root = getModalRoot();
+  if (!root) return content;
+  return createPortal(content, root);
+}
+
+// src/components/Icon.tsx
+import React from "react";
+
+export type IconName =
+    | "bag"
+    | "menu"
+    | "profile"
+    | "search"
+    | "close"
+    | "arrow-left"
+    | "arrow-right"
+    | "orders"
+    | "sun"
+    | "moon";
+
+export interface IconProps extends React.SVGAttributes<SVGSVGElement> {
+    name: IconName;
+    size?: number | string;      // 24 | "1.5rem" | "32px"
+    strokeWidth?: number;        // толщина линий
+    title?: string;              // подпись для a11y
+}
+
+export default function Icon({
+    name,
+    size = 24,
+    strokeWidth = 1,
+    title,
+    ...rest
+}: IconProps) {
+    const sizePx = typeof size === "number" ? `${size}px` : size;
+
+    const content = (() => {
+        switch (name) {
+            case "bag":
+                // ЧУТЬ УЖЕ: корпус 14px шириной вместо 16px
+                return (
+                    <>
+                        <rect x="5" y="8" width="14" height="12" rx="2.5" />
+                        <path d="M9 8V7a3 3 0 0 1 6 0v1" />
+                    </>
+                );
+            case "menu":
+                return (
+                    <>
+                        <path d="M3 6h18" />
+                        <path d="M3 12h18" />
+                        <path d="M3 18h18" />
+                    </>
+                );
+            case "profile":
+                return (
+                    <>
+                        <circle cx="12" cy="8" r="4" />
+                        <path d="M4 20c0-4 4-6 8-6s8 2 8 6" />
+                    </>
+                );
+            case "search":
+                return (
+                    <>
+                        <circle cx="11" cy="11" r="6" />
+                        <path d="M16 16l5 5" />
+                    </>
+                );
+            case "close":
+                return (
+                    <>
+                        <path d="M6 6l12 12" />
+                        <path d="M18 6l-12 12" />
+                    </>
+                );
+            case "arrow-left":
+                return (
+                    <>
+                        <path d="M19 12H5" />
+                        <path d="M12 5l-7 7 7 7" />
+                    </>
+                );
+            case "arrow-right":
+                return (
+                    <>
+                        <path d="M5 12h14" />
+                        <path d="M12 5l7 7-7 7" />
+                    </>
+                );
+            case "orders":
+                // Клипборд + две строки списка
+                return (
+                    <>
+                        <rect x="6" y="7" width="12" height="13" rx="2" />
+                        <path d="M10 7V6a2 2 0 0 1 4 0v1" />
+                        <path d="M9 12h6" />
+                        <path d="M9 16h6" />
+                    </>
+                );
+            case "sun":
+                return (
+                    <>
+                        <circle cx="12" cy="12" r="4" />
+                        <path d="M12 2v2" />
+                        <path d="M12 20v2" />
+                        <path d="M2 12h2" />
+                        <path d="M20 12h2" />
+                        <path d="M4.93 4.93l1.41 1.41" />
+                        <path d="M17.66 17.66l1.41 1.41" />
+                        <path d="M4.93 19.07l1.41-1.41" />
+                        <path d="M17.66 6.34l1.41-1.41" />
+                    </>
+                );
+            case "moon":
+                return (
+                    <>
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                    </>
+                );
+            default:
+                return null;
+        }
+    })();
+
+    return (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width={sizePx}
+            height={sizePx}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            role={title ? "img" : "presentation"}
+            aria-label={title}
+            aria-hidden={title ? undefined : true}
+            {...rest}
+        >
+            {title ? <title>{title}</title> : null}
+            {content}
+        </svg>
+    );
+}
+
+// src/components/Header.tsx
+import { Link } from "@/router/Router";
+import { useCart } from "@/contexts/CartContext";
+import styles from "./Header.module.scss";
+import { useState } from "react";
+
+import Modal from "./Modal";
+import CategoryDrawer from "./CategoryDrawer";
+import Icon from "./Icon";
+import SearchOverlay from "./SearchOverlay";
+
+export default function Header() {
+  const { totalQty } = useCart();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+
+  return (
+    <header className={styles.header}>
+      <div className="container">
+        <div className={styles.bar}>
+          <Link to="/" className={styles.logo} aria-label="На главную">
+            <img src="/logo.png" alt="" className={styles.logoImage} />
+          </Link>
+
+          <nav className={styles.nav} aria-label="Навигация">
+            <button
+              className={styles.btnIcon}
+              onClick={() => setSearchOpen(true)}
+              aria-label="Поиск"
+            >
+              <Icon name="search" size="1.8rem" />
+            </button>
+
+            <Link to="/profile" className={styles.navItem} aria-label="Профиль">
+              <Icon name="profile" size="1.8rem" />
+            </Link>
+
+
+            <Link to="/profile?tab=orders" className={styles.navItem} aria-label="Мои заказы">
+              <Icon name="orders" size="1.8rem" />
+            </Link>
+
+            <Link to="/cart" className={`${styles.navItem} ${styles.cart}`} aria-label="Корзина">
+              <Icon name="bag" size="1.8rem" />
+              {totalQty > 0 && <span className={styles.countBadge}>{totalQty}</span>}
+            </Link>
+
+            <button
+              className={styles.btnIcon}
+              onClick={() => setDrawerOpen(true)}
+              aria-label="Категории"
+            >
+              <Icon name="menu" size="1.8rem" />
+            </button>
+          </nav>
+        </div>
+      </div>
+
+      {/* Категории — выдвижной сайдбар */}
+      <Modal
+        isOpen={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        title="Категории"
+        width={320}
+        side="right"
+      >
+        <CategoryDrawer onClose={() => setDrawerOpen(false)} />
+      </Modal>
+
+      {/* Полноэкранный поиск */}
+      {searchOpen && (
+        <SearchOverlay isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
+      )}
+    </header>
+  );
+}
+
+// src/components/Footer.tsx
+import styles from "./Footer.module.scss";
+import { Link } from "@/router/Router";
+
+type IconItem = {
+  src: string;
+  alt: string;
+  href?: string;
+  h?: number | string;     // кастомная высота (например, 18 | "22px")
+  hSm?: number | string;   // высота на мобилке (опционально)
+};
+
+const payments: IconItem[] = [
+  { src: "/icons/visa.svg", alt: "Visa", h: 18 },
+  { src: "/icons/mastercard.svg", alt: "Mastercard", h: 34 },
+];
+
+const shipping: IconItem[] = [
+  { src: "/icons/dhl.svg", alt: "DHL", h: 12, hSm: 12 },
+];
+
+const socials: IconItem[] = [
+  { src: "/icons/meta.svg", alt: "Meta", href: "#", h: 34 },
+  { src: "/icons/instagram.svg", alt: "Instagram", href: "#", h: 18 },
+  { src: "/icons/x.svg", alt: "X", href: "#", h: 16 },
+  { src: "/icons/tiktok.svg", alt: "TikTok", href: "#", h: 34 },
+  { src: "/icons/youtube.svg", alt: "YouTube", href: "#", h: 30 },
+];
+
+// svg→png fallback
+const onImgError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+  const el = e.currentTarget;
+  if (el.dataset.fallback === "1") return;
+  el.dataset.fallback = "1";
+  el.src = el.src.replace(".svg", ".png");
+};
+
+// helper: приводит число к px
+const toPx = (v?: number | string) => (typeof v === "number" ? `${v}px` : v);
+
+export default function Footer() {
+  return (
+    <footer className={styles.footer}>
+      <div className="container">
+        <div className={styles.grid}>
+          <div>
+            <div className={styles.brand}>
+              <img src="/logo.png" alt="Mira" />
+            </div>
+          </div>
+
+          <nav className={styles.links} aria-label="Ссылки">
+            <Link to="/catalog">Каталог</Link>
+            <Link to="/profile?tab=orders">Заказы</Link>
+            <Link to="/profile">Профиль</Link>
+          </nav>
+        </div>
+
+        <div className={styles.iconSection}>
+          <div className={styles.iconGroup} aria-label="Доставка">
+            <span className={styles.groupTitle}>Доставка</span>
+            <ul className={styles.icons}>
+              {shipping.map((i) => (
+                <li key={i.alt} className={styles.iconItem}>
+                  <img
+                    src={i.src}
+                    alt={i.alt}
+                    onError={onImgError}
+                    style={
+                      {
+                        // кастомные высоты через CSS-переменные
+                        ["--h" as any]: toPx(i.h),
+                        ["--h-sm" as any]: toPx(i.hSm),
+                      } as React.CSSProperties
+                    }
+                  />
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className={styles.iconGroup} aria-label="Оплата">
+            <span className={styles.groupTitle}>Оплата</span>
+            <ul className={styles.icons}>
+              {payments.map((i) => (
+                <li key={i.alt} className={styles.iconItem}>
+                  <img
+                    src={i.src}
+                    alt={i.alt}
+                    onError={onImgError}
+                    style={
+                      {
+                        ["--h" as any]: toPx(i.h),
+                        ["--h-sm" as any]: toPx(i.hSm),
+                      } as React.CSSProperties
+                    }
+                  />
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        <div className={styles.bottom}>
+          <div className={styles.legal}>
+            <ul>
+              <li>
+                <Link to="/privacy">Политика конфиденциальности</Link>
+              </li>
+              <li>
+                <Link to="/terms">Условия использования</Link>
+              </li>
+              <li>
+                <Link to="/cookies">Политика использования cookies</Link>
+              </li>
+            </ul>
+          </div>
+          <div className={styles.copy}>© {new Date().getFullYear()} Mira</div>
+        </div>
+
+        <div className={styles.iconGroup} style={{ display: "flex", marginTop: 30, marginLeft: "-18px", justifyContent: "start" }} aria-label="Соцсети">
+          <ul className={styles.icons}>
+            {socials.map((i) => (
+              <li key={i.alt} className={styles.iconItem}>
+                <a
+                  href={i.href || "#"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={i.alt}
+                  className={styles.iconLink}
+                >
+                  <img
+                    src={i.src}
+                    alt=""
+                    onError={onImgError}
+                    style={
+                      {
+                        ["--h" as any]: toPx(i.h),
+                        ["--h-sm" as any]: toPx(i.hSm),
+                      } as React.CSSProperties
+                    }
+                  />
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+// src/components/FiltersPanel.tsx
+import { useMemo, useState } from "react";
+import styles from "./FiltersPanel.module.scss";
+import { useProducts, SortKey } from "@/contexts/ProductsContext";
+import { categories } from "@/data/categories";
+
+type Props = {
+  onApply?: () => void;
+  inModal?: boolean;
+};
+
+/* ===== Dual range ===== */
+function DualRange({
+  min, max, from, to, onFrom, onTo,
+}: {
+  min: number; max: number; from: number; to: number;
+  onFrom: (n: number) => void; onTo: (n: number) => void;
+}) {
+  const [active, setActive] = useState<"from" | "to" | null>(null);
+
+  const span = Math.max(1, max - min);
+  const pct = (n: number) => ((n - min) / span) * 100;
+  const pFrom = pct(from);
+  const pTo = pct(to);
+
+  // заливка активного диапазона рисуется фоном обёртки
+  const bg = `linear-gradient(to right,
+    rgba(255,255,255,.18) 0%,
+    rgba(255,255,255,.18) ${pFrom}%,
+    var(--pink) ${pFrom}%,
+    var(--pink) ${pTo}%,
+    rgba(255,255,255,.18) ${pTo}%,
+    rgba(255,255,255,.18) 100%)`;
+
+  const toNum = (v: string) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  return (
+    <div className={styles.rangeWrap} style={{ background: bg }}>
+      {/* левая ручка */}
+      <input
+        aria-label="Минимальная цена"
+        type="range"
+        min={min}
+        max={max}
+        step={1}
+        value={from}
+        onChange={(e) => onFrom(Math.min(toNum(e.target.value), to))}
+        onMouseDown={() => setActive("from")}
+        onTouchStart={() => setActive("from")}
+        onMouseUp={() => setActive(null)}
+        onTouchEnd={() => setActive(null)}
+        className={styles.range}
+        style={{ zIndex: active === "from" ? 2 : 1 }}
+      />
+
+      {/* правая ручка */}
+      <input
+        aria-label="Максимальная цена"
+        type="range"
+        min={min}
+        max={max}
+        step={1}
+        value={to}
+        onChange={(e) => onTo(Math.max(toNum(e.target.value), from))}
+        onMouseDown={() => setActive("to")}
+        onTouchStart={() => setActive("to")}
+        onMouseUp={() => setActive(null)}
+        onTouchEnd={() => setActive(null)}
+        className={styles.range}
+        style={{ zIndex: active === "to" ? 2 : 1 }}
+      />
+    </div>
+  );
+}
+
+/* ===== Панель фильтров ===== */
+export default function FiltersPanel({ onApply, inModal }: Props) {
+  const {
+    search, setSearch,
+    sort, setSort,
+    filterPath, setFilterPath,
+    priceFrom, setPriceFrom,
+    priceTo, setPriceTo,
+    priceBounds,
+    ratingMin, setRatingMin,
+    resetFilters,
+  } = useProducts();
+
+  /* категории 1-2-3 уровня */
+  const cat1 = filterPath[0] || "";
+  const cat2 = filterPath[1] || "";
+  const cat3 = filterPath[2] || "";
+
+  const opts1 = useMemo(() => categories.map(c => c.title), []);
+  const opts2 = useMemo(() => {
+    const c = categories.find(x => x.title === cat1);
+    return c?.children?.map(s => s.title) || [];
+  }, [cat1]);
+  const opts3 = useMemo(() => {
+    const c = categories.find(x => x.title === cat1);
+    const s = c?.children?.find(x => x.title === cat2);
+    return s?.children?.map(l => l.title) || [];
+  }, [cat1, cat2]);
+
+  const onCat1 = (v: string) => v ? setFilterPath([v]) : setFilterPath([]);
+  const onCat2 = (v: string) => v ? setFilterPath([cat1, v]) : setFilterPath([cat1]);
+  const onCat3 = (v: string) => v ? setFilterPath([cat1, cat2, v]) : setFilterPath([cat1, cat2]);
+
+  /* цена локально (для плавного UX) */
+  const [from, setFrom] = useState<number>(priceFrom);
+  const [to, setTo] = useState<number>(priceTo);
+  const clampFrom = (n: number) => Math.max(priceBounds.min, Math.min(n, to));
+  const clampTo   = (n: number) => Math.min(priceBounds.max, Math.max(n, from));
+  const changeFrom = (n: number) => { const v = clampFrom(n); setFrom(v); setPriceFrom(v); };
+  const changeTo   = (n: number)   => { const v = clampTo(n);   setTo(v); setPriceTo(v); };
+
+  const applyAndClose = () => { onApply?.(); };
+  const resetAll = () => {
+    resetFilters();
+    setFrom(priceBounds.min);
+    setTo(priceBounds.max);
+  };
+
+  const parseNum = (v: string, fallback: number) => {
+    const n = Number(v); return Number.isFinite(n) ? n : fallback;
+  };
+
+  return (
+    <div className={styles.panel}>
+      {/* Поиск */}
+      <label className={styles.field}>
+        <span>Поиск</span>
+        <input
+          className="input"
+          placeholder="Название, описание..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </label>
+
+      {/* Категории */}
+      <div className={styles.group}>
+        <div className={styles.groupTitle}>Категории</div>
+
+        <div className={styles.grid2}>
+          <label className={styles.field}>
+            <span>Раздел</span>
+            <select className="input" value={cat1} onChange={e => onCat1(e.target.value)}>
+              <option value="">—</option>
+              {opts1.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </label>
+          <label className={styles.field}>
+            <span>Подраздел</span>
+            <select className="input" value={cat2} onChange={e => onCat2(e.target.value)} disabled={!cat1}>
+              <option value="">—</option>
+              {opts2.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </label>
+        </div>
+
+        <label className={styles.field}>
+          <span>Категория</span>
+          <select className="input" value={cat3} onChange={e => onCat3(e.target.value)} disabled={!cat2}>
+            <option value="">—</option>
+            {opts3.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+        </label>
+
+        {filterPath.length > 0 && (
+          <div className={styles.chips}>
+            <span className="badge">{filterPath.join(" / ")}</span>
+            <button type="button" className="btn" onClick={() => setFilterPath([])}>Сбросить путь</button>
+          </div>
+        )}
+      </div>
+
+      {/* Цена */}
+      <div className={styles.group}>
+        <div className={styles.groupTitle}>Цена, €</div>
+
+        <div className={styles.priceRow}>
+          <label className={styles.priceField}>
+            <span>От</span>
+            <input
+              className="input"
+              type="number"
+              inputMode="numeric"
+              step={1}
+              min={priceBounds.min}
+              max={to}
+              value={from}
+              onChange={(e) => changeFrom(parseNum(e.target.value, priceBounds.min))}
+            />
+          </label>
+          <label className={styles.priceField}>
+            <span>До</span>
+            <input
+              className="input"
+              type="number"
+              inputMode="numeric"
+              step={1}
+              min={from}
+              max={priceBounds.max}
+              value={to}
+              onChange={(e) => changeTo(parseNum(e.target.value, priceBounds.max))}
+            />
+          </label>
+        </div>
+
+        <DualRange
+          min={priceBounds.min}
+          max={priceBounds.max}
+          from={from}
+          to={to}
+          onFrom={changeFrom}
+          onTo={changeTo}
+        />
+
+        <div className={styles.rangeLabels}>
+          <span>{priceBounds.min}</span>
+          <span>{priceBounds.max}</span>
+        </div>
+      </div>
+
+      {/* Рейтинг */}
+      <div className={styles.group}>
+        <div className={styles.groupTitle}>Рейтинг</div>
+        <div className={styles.ratingChips}>
+          <button type="button"
+            className={ratingMin === 0 ? styles.chipActive : styles.chip}
+            onClick={() => setRatingMin(0)}
+          >Все</button>
+          {[4,3,2].map(n => (
+            <button type="button"
+              key={n}
+              className={ratingMin === n ? styles.chipActive : styles.chip}
+              onClick={() => setRatingMin(n)}
+            >{n}+</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Сортировка */}
+      <div className={styles.group}>
+        <div className={styles.groupTitle}>Сортировка</div>
+        <select
+          className="input"
+          value={sort}
+          onChange={(e) => setSort(e.target.value as SortKey)}
+        >
+          <option value="popular">Сначала популярные</option>
+          <option value="price-asc">Сначала дешёвые</option>
+          <option value="price-desc">Сначала дорогие</option>
+        </select>
+      </div>
+
+      {/* Кнопки */}
+      <div className={styles.actions}>
+        <button type="button" className="btn" onClick={resetAll}>Сбросить фильтры</button>
+        {inModal && (
+          <button type="button" className="btn btnPrimary" onClick={applyAndClose}>Применить</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// src/components/Field.tsx
+import styles from "./Field.module.scss";
+
+type Props = {
+  label: string;
+  hint?: string;
+  error?: string;
+  children: React.ReactNode;
+};
+
+export default function Field({ label, hint, error, children }: Props) {
+  return (
+    <label className={styles.field}>
+      <div className={styles.row}>
+        <span className={styles.label}>{label}</span>
+        {hint && <span className={styles.hint}>{hint}</span>}
+      </div>
+      <div>{children}</div>
+      {error && <div className={styles.error}>{error}</div>}
+    </label>
+  );
+}
+
+// src/components/DeliveryInfo.tsx
+import styles from "./DeliveryInfo.module.scss";
+import { fmtEUR } from "@/utils/money";
+import { useCart } from "@/contexts/CartContext";
+import React, { useMemo, useState } from "react";
+
+const VAT_RATE = 0.19;
+const FREE_THRESHOLD = 49; // €
+const DHL_COST = 4.99;
+const EXPRESS_COST = 12.9;
+
+function addBusinessDays(base: Date, days: number) {
+  const d = new Date(base.getFullYear(), base.getMonth(), base.getDate());
+  let added = 0;
+  while (added < days) {
+    d.setDate(d.getDate() + 1);
+    const wd = d.getDay(); // 0=Sun,6=Sat
+    if (wd !== 0 && wd !== 6) added++;
+  }
+  return d;
+}
+
+function fmtDay(d: Date) {
+  return d.toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "short" });
+}
+function fmtRange(a: Date, b: Date) {
+  if (a.getTime() === b.getTime()) return fmtDay(a);
+  return `${fmtDay(a)} – ${fmtDay(b)}`;
+}
+
+export default function DeliveryInfo({ productPrice }: { productPrice: number }) {
+  const { total } = useCart();
+
+  // мини-селектор для расчёта (не меняет корзину)
+  const [qty, setQty] = useState<number>(1);
+  const inc = () => setQty(q => Math.min(99, q + 1));
+  const dec = () => setQty(q => Math.max(1, q - 1));
+  const onQtyInput = (v: string) => {
+    const n = Math.max(1, Math.min(99, Number(v.replace(/\D+/g, "")) || 1));
+    setQty(n);
+  };
+
+  // суммы
+  const subtotalWithThis = total + productPrice * qty;
+  const leftToFree = Math.max(0, FREE_THRESHOLD - subtotalWithThis);
+  const dhlCost = leftToFree === 0 ? 0 : DHL_COST;
+  const packstationCost = dhlCost;
+
+  const vatForItem = useMemo(() => {
+    const vat = productPrice - productPrice / (1 + VAT_RATE);
+    return Math.round(vat * 100) / 100;
+  }, [productPrice]);
+
+  // даты
+  const now = new Date();
+  const paketStart = addBusinessDays(now, 2);
+  const paketEnd = addBusinessDays(now, 3);
+  const expressDay = addBusinessDays(now, 1);
+
+  return (
+    <section className={`${styles.card}`}>
+      <div className={styles.head}>
+        <h3>Доставка и оплата</h3>
+        <div className={styles.qty}>
+          <span className={styles.qtyLabel}>Расчёт для</span>
+          <div className={styles.qtyCtrl}>
+            <button style={{border: 'none', background: 'none'}} className="btn" onClick={dec} aria-label="Уменьшить">−</button>
+            <input
+              className={styles.qtyInput}
+              value={qty}
+              onChange={(e) => onQtyInput(e.target.value)}
+              inputMode="numeric"
+              aria-label="Количество"
+            />
+            <button style={{border: 'none', background: 'none'}} className="btn" onClick={inc} aria-label="Увеличить">+</button>
+          </div>
+        </div>
+      </div>
+
+      {/* Варианты доставки — компактным списком */}
+      <ul className={styles.shipList} aria-label="Варианты доставки">
+        <li className={styles.row}>
+          <div className={styles.left}>
+            <div className={styles.title}>DHL Paket</div>
+            <div className={styles.sub}>2–3 Werktage • {fmtRange(paketStart, paketEnd)}</div>
+          </div>
+          <div className={styles.right}>
+            <b className={leftToFree === 0 ? styles.free : undefined}>{fmtEUR(dhlCost)}</b>
+            <div className={styles.note}>
+              {leftToFree === 0 ? (
+                <span className={styles.freeBadge}>Бесплатная доставка</span>
+              ) : (
+                <>Бесплатно от {fmtEUR(FREE_THRESHOLD)} · не хватает {fmtEUR(leftToFree)}</>
+              )}
+            </div>
+          </div>
+        </li>
+
+        <li className={styles.row}>
+          <div className={styles.left}>
+            <div className={styles.title}>DHL Express</div>
+            <div className={styles.sub}>1 Werktag • {fmtDay(expressDay)}</div>
+          </div>
+          <div className={styles.right}><b>{fmtEUR(EXPRESS_COST)}</b></div>
+        </li>
+
+        <li className={styles.row}>
+          <div className={styles.left}>
+            <div className={styles.title}>DHL Packstation / Postfiliale</div>
+            <div className={styles.sub}>самовывоз • {fmtRange(paketStart, paketEnd)}</div>
+          </div>
+          <div className={styles.right}>
+            <b className={leftToFree === 0 ? styles.free : undefined}>{fmtEUR(packstationCost)}</b>
+            <div className={styles.note}>
+              {leftToFree === 0 ? (
+                <span className={styles.freeBadge}>Бесплатная доставка</span>
+              ) : (
+                <>Бесплатно от {fmtEUR(FREE_THRESHOLD)} · не хватает {fmtEUR(leftToFree)}</>
+              )}
+            </div>
+          </div>
+        </li>
+
+        <li className={styles.row}>
+          <div className={styles.left}>
+            <div className={styles.title}>Самовывоз (Berlin-Mitte)</div>
+            <div className={styles.sub}>сегодня/завтра после подтверждения</div>
+          </div>
+          <div className={styles.right}><b>{fmtEUR(0)}</b></div>
+        </li>
+      </ul>
+
+      {/* Информация — тоже списком */}
+      <ul className={styles.infoList}>
+        <li>
+          <span className={styles.icon} aria-hidden>
+            {/* НДС */}
+            <svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a7 7 0 0 1 7 7v1h1a2 2 0 0 1 2 2v3.5a4.5 4.5 0 0 1-4.5 4.5H6.5A4.5 4.5 0 0 1 2 15.5V12a2 2 0 0 1 2-2h1V9a7 7 0 0 1 7-7Z"/></svg>
+          </span>
+          <div>
+            <div className={styles.infoTitle}>НДС (MwSt)</div>
+            <div className={styles.infoText}>
+              Цена включает 19% НДС. Для {qty} шт: ≈ <b>{fmtEUR(vatForItem * qty)}</b>.
+            </div>
+          </div>
+        </li>
+        <li>
+          <span className={styles.icon} aria-hidden>
+            {/* Оплата */}
+            <svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M3 5h18a2 2 0 0 1 2 2v1H1V7a2 2 0 0 1 2-2Zm-2 6h22v6a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2v-6Zm5 4h4v2H6v-2Z"/></svg>
+          </span>
+          <div>
+            <div className={styles.infoTitle}>Оплата</div>
+            <div className={styles.infoText}>
+              Visa, Mastercard.
+            </div>
+          </div>
+        </li>
+        <li>
+          <span className={styles.icon} aria-hidden>
+            {/* Возврат */}
+            <svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M21 7h-6l-2-2H3a2 2 0 0 0-2 2v10a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V9a2 2 0 0 0-2-2Z"/></svg>
+          </span>
+          <div>
+            <div className={styles.infoTitle}>Возврат</div>
+            <div className={styles.infoText}>14 дней. Товары без следов использования и в оригинальной упаковке.</div>
+          </div>
+        </li>
+      </ul>
+
+      <p className={styles.hint}>
+        Способ и стоимость доставки выбираются на шаге <b>Оформление</b>. Итог зависит от состава заказа.
+      </p>
+    </section>
+  );
+}
+
+// src/components/CategoryDrawer.tsx
+import styles from "./CategoryDrawer.module.scss";
+import { useState } from "react";
+import { categories, CategoryNode } from "@/data/categories";
+import { navigate } from "@/router/Router";
+import { useProducts } from "@/contexts/ProductsContext";
+import Icon from "./Icon";
+import ThemeToggle from "./ThemeToggle";
+
+type Props = { onClose: () => void };
+
+export default function CategoryDrawer({ onClose }: Props) {
+    const [trail, setTrail] = useState<CategoryNode[]>([]);
+    const level = trail.length;
+    const { setFilterPath } = useProducts(); // требуется поле в ProductsContext
+
+    const listAt = (lvl: number): CategoryNode[] => {
+        if (lvl === 0) return categories;
+        const parent = trail[lvl - 1];
+        return parent?.children ?? [];
+    };
+
+    const go = (node: CategoryNode) => {
+        if (node.children && node.children.length > 0) {
+            setTrail((t) => [...t, node]);
+        } else {
+            const path = [...trail, node].map((n) => n.title);
+            setFilterPath(path);     // применяем фильтр
+            onClose();
+            navigate("/catalog");    // переходим в каталог
+        }
+    };
+
+    const back = () => setTrail((t) => t.slice(0, -1));
+    const reset = () => setTrail([]);
+
+    return (
+        <div className={styles.wrap}>
+            <div className={styles.toolbar}>
+                {level > 0 ? (
+                    <div className={styles.btnIcon} onClick={back}>
+                        <Icon name="arrow-left" width={20} />
+                    </div>
+                ) : (
+                    <div className={styles.btnIcon} onClick={back}>
+                    </div>
+                )}
+                <div className={styles.breadcrumbs}>
+                    {level === 0 ? "Категории" : trail.map((n) => n.title).join(" / ")}
+                </div>
+            </div>
+
+            <div className={styles.viewport}>
+                <div className={styles.track} style={{ transform: `translateX(${-level * 100}%)` }}>
+                    {/* Уровень 0 */}
+                    <ul className={styles.col}>
+                        {listAt(0).map((n) => (
+                            <li key={n.slug}>
+                                <button className={styles.item} onClick={() => go(n)}>
+                                    <span>{n.title}</span>
+                                    {n.children && <span className={styles.chev}>›</span>}
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+
+                    {/* Уровень 1 */}
+                    {trail[0] && (
+                        <ul className={styles.col}>
+                            {listAt(1).map((n) => (
+                                <li key={n.slug}>
+                                    <button className={styles.item} onClick={() => go(n)}>
+                                        <span>{n.title}</span>
+                                        {n.children && <span className={styles.chev}>›</span>}
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+
+                    {/* Уровень 2 */}
+                    {trail[1] && (
+                        <ul className={styles.col}>
+                            {listAt(2).map((n) => (
+                                <li key={n.slug}>
+                                    <button className={styles.item} onClick={() => go(n)}>
+                                        <span>{n.title}</span>
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+
+                </div>
+            </div>
+            {/* переключатель темы */}
+            <ThemeToggle />
+        </div>
+    );
+}
+
+// src/components/Breadcrumbs.tsx
+import { Link } from "@/router/Router";
+import styles from "./Breadcrumbs.module.scss";
+
+export type Crumb = {
+  label: string;
+  to?: string;                 // обычный переход (Link)
+  onClick?: () => void;        // произвольное действие (напр. setFilterPath + navigate)
+  current?: boolean;           // последний/текущий сегмент
+};
+
+export default function Breadcrumbs({ items }: { items: Crumb[] }) {
+  return (
+    <nav className={styles.wrap} aria-label="Хлебные крошки">
+      <ol className={styles.list}>
+        {items.map((c, i) => {
+          const isLast = i === items.length - 1 || c.current;
+          return (
+            <li key={`${c.label}_${i}`} className={styles.item} aria-current={isLast ? "page" : undefined}>
+              {!isLast && c.to ? (
+                <Link to={c.to} className={styles.link}>{c.label}</Link>
+              ) : !isLast && c.onClick ? (
+                <button className={styles.linkButton} onClick={c.onClick}>{c.label}</button>
+              ) : (
+                <span className={styles.current}>{c.label}</span>
+              )}
+              {!isLast && <span className={styles.sep}>›</span>}
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
+  );
+}

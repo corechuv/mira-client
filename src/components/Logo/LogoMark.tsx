@@ -1,0 +1,44 @@
+import * as React from "react";
+
+export type LogoMarkProps = React.SVGProps<SVGSVGElement> & {
+  /** Optional accessible title. If provided, the SVG will be exposed to AT. */
+  title?: string;
+};
+
+/**
+ * LogoMark – React UI TSX component rendering the provided SVG.
+ * Tailwind-friendly: control size with className (e.g., "h-10 w-auto").
+ */
+const LogoMark: React.FC<LogoMarkProps> = ({
+  title,
+  className,
+  ...props
+}) => {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={377}
+      height={384}
+      viewBox="0 0 377 384"
+      role={title ? "img" : undefined}
+      aria-hidden={title ? undefined : true}
+      className={className}
+      focusable={false}
+      {...props}
+    >
+      {title ? <title>{title}</title> : null}
+      <path
+        d="M 0 0 L 76 0 L 186 157 L 297 0 L 376 0 L 376 383 L 297 383 L 297 122 L 209 244 L 166 244 L 76 122 L 0 16 L 0 0 Z"
+        fill="currentColor"
+        stroke="none"
+      />
+      <path
+        d="M 0 307 L 76 307 L 76 384 L 12 384 A 12 12 0 0 1 0 372 L 0 307 Z"
+        fill="currentColor"
+        stroke="none"
+      />
+    </svg>
+  );
+};
+
+export default LogoMark;

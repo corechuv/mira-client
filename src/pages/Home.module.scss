@@ -9,21 +9,7 @@
   position: relative;
   overflow: hidden;
   border-radius: 18px;
-  background:
-    radial-gradient(600px 300px at 110% -20%, rgba(255,46,138,0.35), transparent),
-    linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
-}
-
-.heroCard::after {
-  content: "";
-  position: absolute;
-  right: -30px;
-  top: -30px;
-  width: 260px;
-  height: 260px;
-  background: radial-gradient(closest-side, rgba(255,46,138,0.35), transparent);
-  border-radius: 50%;
-  filter: blur(12px);
+  border: 1px solid var(--border-weak);
 }
 
 .badge {

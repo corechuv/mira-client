@@ -14,7 +14,7 @@
 .row {
   display: grid;
   grid-template-columns: 1.2fr 120px 1fr 120px;
-  gap: .6rem;
+  gap: 1rem;
   align-items: center;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
   border: 1px solid var(--border-weak);
@@ -56,6 +56,26 @@
     object-fit: cover;
     aspect-ratio: 1/1;
     border-radius: 10px;
+  }
+}
+
+.qty {
+  width: 60px;
+  height: 46px;
+  padding: 0 1rem;
+  border-radius: 12px;
+  font-size: 16px;
+  background: var(--surface-2);
+  border: 1px solid transparent;
+  color: var(--text);
+  outline: none;
+  display: flex;
+  text-align: center;
+
+  &::-webkit-inner-spin-button,
+  &::-webkit-outer-spin-button {
+    margin: 0;
+    -webkit-appearance: none;
   }
 }
 

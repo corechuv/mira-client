@@ -10,3 +10,7 @@ dist/
 .DS_Store
 .idea/
 .vscode/
+
+recovery.txt
+schema.sql
+seed.sql

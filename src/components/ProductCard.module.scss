@@ -1,7 +1,7 @@
 // src/components/ProductCard.module.scss
 .card {
   display: grid;
-  grid-template-rows: 180px 1fr;
+  grid-template-rows: 1fr auto;
   overflow: hidden;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
     border: 1px solid var(--border-weak);

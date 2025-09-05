@@ -1,7 +1,6 @@
 // src/pages/Product.tsx
 import { useRoute } from "@/router/Router";
 import styles from "./Product.module.scss";
-import { products } from "@/data/products";
 import { useCart } from "@/contexts/CartContext";
 import Breadcrumbs, { Crumb } from "@/components/Breadcrumbs";
 import { useProducts } from "@/contexts/ProductsContext";
@@ -10,12 +9,23 @@ import ProductsRail from "@/components/ProductsRail";
 import Reviews from "@/components/Reviews";
 import { fmtEUR } from "@/utils/money";
 import DeliveryInfo from "@/components/DeliveryInfo";
+import { useEffect, useMemo, useState } from "react";
+import { api } from "@/lib/api";
 
 export default function Product() {
   const { params } = useRoute();
-  const product = products.find(p => p.slug === params.slug);
   const { add } = useCart();
-  const { setFilterPath } = useProducts();
+  const { all, setFilterPath } = useProducts();
+  const [product, setProduct] = useState(() => all.find(p => p.slug === params.slug));
+
+  useEffect(() => {
+    if (!product) {
+      (async () => {
+        const p = await api.product(params.slug);
+        if (p) setProduct(p);
+      })();
+    }
+  }, [params.slug, product]);
 
   if (!product) {
     return (
@@ -30,45 +40,21 @@ export default function Product() {
     );
   }
 
-  // построим список похожих: сначала по leaf, потом по sub, потом по category
-  const pool = products.filter((p) => p.id !== product.id);
-  const byLeaf = product.leaf ? pool.filter((p) => p.leaf === product.leaf) : [];
-  const bySub = product.sub ? pool.filter((p) => p.sub === product.sub) : [];
-  const byCat = pool.filter((p) => p.category === product.category);
-
+  const pool = all.filter(p => p.id !== product.id);
+  const byLeaf = product.leaf ? pool.filter(p => p.leaf === product.leaf) : [];
+  const bySub  = product.sub  ? pool.filter(p => p.sub  === product.sub)  : [];
+  const byCat  = pool.filter(p => p.category === product.category);
   const seen = new Set<string>();
-  const pick = (arr: typeof pool) => arr.filter((p) => !seen.has(p.id) && (seen.add(p.id), true));
+  const pick = (arr: typeof pool) => arr.filter(p => !seen.has(p.id) && (seen.add(p.id), true));
   const similar = [...pick(byLeaf), ...pick(bySub), ...pick(byCat)];
 
-  // хлебные крошки
   const crumbs: Crumb[] = [
     { label: "Главная", to: "/" },
     { label: "Каталог", to: "/catalog" }
   ];
-  if (product.category) {
-    const cat = product.category;
-    crumbs.push({
-      label: cat,
-      onClick: () => { setFilterPath([cat]); navigate("/catalog"); }
-    });
-  }
-  if (product.sub) {
-    const cat = product.category;
-    const sub = product.sub;
-    crumbs.push({
-      label: sub,
-      onClick: () => { setFilterPath([cat, sub]); navigate("/catalog"); }
-    });
-  }
-  if (product.leaf) {
-    const cat = product.category;
-    const sub = product.sub!;
-    const leaf = product.leaf;
-    crumbs.push({
-      label: leaf,
-      onClick: () => { setFilterPath([cat, sub, leaf]); navigate("/catalog"); }
-    });
-  }
+  if (product.category) crumbs.push({ label: product.category, onClick: () => { setFilterPath([product.category]); navigate("/catalog"); } });
+  if (product.sub)      crumbs.push({ label: product.sub,      onClick: () => { setFilterPath([product.category, product.sub!]); navigate("/catalog"); } });
+  if (product.leaf)     crumbs.push({ label: product.leaf,     onClick: () => { setFilterPath([product.category, product.sub!, product.leaf!]); navigate("/catalog"); } });
   crumbs.push({ label: product.title, current: true });
 
   return (
@@ -104,10 +90,7 @@ export default function Product() {
         </div>
       </div>
 
-      {/* Отзывы о товаре */}
       <Reviews productId={product.id} />
-
-      {/* Похожие товары */}
       <ProductsRail title="Похожие товары" items={similar} excludeId={product.id} />
     </div>
   );

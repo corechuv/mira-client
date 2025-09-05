@@ -11,6 +11,7 @@ export type Product = {
   short: string;
   description: string;
   imageUrl?: string;
+  images?: string[];
 };
 
 export const products: Product[] = [

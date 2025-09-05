@@ -8,6 +8,7 @@ import Modal from "./Modal";
 import CategoryDrawer from "./CategoryDrawer";
 import Icon from "./Icon";
 import SearchOverlay from "./SearchOverlay";
+import LogoMark from "./Logo/LogoMark";
 
 export default function Header() {
   const { totalQty } = useCart();
@@ -19,7 +20,7 @@ export default function Header() {
       <div className="container">
         <div className={styles.bar}>
           <Link to="/" className={styles.logo} aria-label="На главную">
-            <img src="/logo.png" alt="" className={styles.logoImage} />
+            <LogoMark className={styles.logoMark} title="Mira Logo" />
           </Link>
 
           <nav className={styles.nav} aria-label="Навигация">

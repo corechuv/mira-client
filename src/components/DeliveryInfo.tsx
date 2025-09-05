@@ -134,8 +134,6 @@ export default function DeliveryInfo({ productPrice }: { productPrice: number })
       <ul className={styles.infoList}>
         <li>
           <span className={styles.icon} aria-hidden>
-            {/* НДС */}
-            <svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a7 7 0 0 1 7 7v1h1a2 2 0 0 1 2 2v3.5a4.5 4.5 0 0 1-4.5 4.5H6.5A4.5 4.5 0 0 1 2 15.5V12a2 2 0 0 1 2-2h1V9a7 7 0 0 1 7-7Z"/></svg>
           </span>
           <div>
             <div className={styles.infoTitle}>НДС (MwSt)</div>
@@ -146,8 +144,6 @@ export default function DeliveryInfo({ productPrice }: { productPrice: number })
         </li>
         <li>
           <span className={styles.icon} aria-hidden>
-            {/* Оплата */}
-            <svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M3 5h18a2 2 0 0 1 2 2v1H1V7a2 2 0 0 1 2-2Zm-2 6h22v6a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2v-6Zm5 4h4v2H6v-2Z"/></svg>
           </span>
           <div>
             <div className={styles.infoTitle}>Оплата</div>
@@ -158,8 +154,6 @@ export default function DeliveryInfo({ productPrice }: { productPrice: number })
         </li>
         <li>
           <span className={styles.icon} aria-hidden>
-            {/* Возврат */}
-            <svg width="16" height="16" viewBox="0 0 24 24"><path fill="currentColor" d="M21 7h-6l-2-2H3a2 2 0 0 0-2 2v10a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V9a2 2 0 0 0-2-2Z"/></svg>
           </span>
           <div>
             <div className={styles.infoTitle}>Возврат</div>

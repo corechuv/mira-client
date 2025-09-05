@@ -44,11 +44,35 @@ function match(path: string, route: string): null | Record<string, string> {
 }
 
 // --- programmatic navigation ---
-export const navigate = (to: string) => {
-  if (to !== window.location.pathname) {
-    window.history.pushState({}, "", to);
-    window.dispatchEvent(new PopStateEvent("popstate"));
-  }
+export const navigate = (to: string, replace = false) => {
+  const current = window.location.pathname + window.location.search;
+  if (to === current) return;
+  if (replace) window.history.replaceState({}, "", to);
+  else window.history.pushState({}, "", to);
+  window.dispatchEvent(new PopStateEvent("popstate"));
+};
+
+export const useRoute = () => {
+  const getKey = () => window.location.pathname + window.location.search;
+  const [locKey, setLocKey] = useState<string>(getKey());
+
+  useEffect(() => {
+    const handler = () => setLocKey(getKey());
+    window.addEventListener("popstate", handler);
+    return () => window.removeEventListener("popstate", handler);
+  }, []);
+
+  const pathname = useMemo(() => new URL(window.location.href).pathname, [locKey]);
+
+  const route = useMemo(() => {
+    for (const r of routes) {
+      const params = match(pathname, r.path);
+      if (params) return { element: r.element, params };
+    }
+    return { element: <NotFound />, params: {} as Record<string, string> };
+  }, [pathname]);
+
+  return route;
 };
 
 // --- Link component using History API ---
@@ -79,26 +103,6 @@ export const Link: React.FC<
       {children}
     </a>
   );
-};
-
-export const useRoute = () => {
-  const [path, setPath] = useState<string>(window.location.pathname || "/");
-
-  useEffect(() => {
-    const handler = () => setPath(window.location.pathname || "/");
-    window.addEventListener("popstate", handler);
-    return () => window.removeEventListener("popstate", handler);
-  }, []);
-
-  const route = useMemo(() => {
-    for (const r of routes) {
-      const params = match(path, r.path);
-      if (params) return { element: r.element, params };
-    }
-    return { element: <NotFound />, params: {} as Record<string, string> };
-  }, [path]);
-
-  return route;
 };
 
 export const Router: React.FC = () => {

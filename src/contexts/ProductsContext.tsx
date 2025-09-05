@@ -1,57 +1,72 @@
-// src/contexts/ProductsContext.tsx
-import React, { createContext, useContext, useMemo, useState } from "react";
-import { products as seed, Product } from "@/data/products";
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import type { Product } from "@/types/product";
+import { api } from "@/lib/api";
 
 export type SortKey = "popular" | "price-asc" | "price-desc";
 
 export type ProductsState = {
+  // полный список из API
+  all: Product[];
+  // отфильтрованный список (под текущие фильтры)
   products: Product[];
 
-  search: string;
-  setSearch: (q: string) => void;
+  // фильтры/сортировки
+  search: string; setSearch: (q: string) => void;
+  category: string; setCategory: (c: string) => void;
+  sort: SortKey; setSort: (s: SortKey) => void;
+  filterPath: string[]; setFilterPath: (p: string[]) => void;
 
-  category: string;                    // базовый селект (если не используется filterPath)
-  setCategory: (c: string) => void;
-
-  sort: SortKey;
-  setSort: (s: SortKey) => void;
-
-  filterPath: string[];                // [Категория, Подкатегория?, Лист?]
-  setFilterPath: (p: string[]) => void;
-
-  // фильтры цены/рейтинга
-  priceFrom: number;
-  priceTo: number;
-  setPriceFrom: (n: number) => void;
-  setPriceTo: (n: number) => void;
+  // цена/рейтинг
+  priceFrom: number; priceTo: number;
+  setPriceFrom: (n: number) => void; setPriceTo: (n: number) => void;
   priceBounds: { min: number; max: number };
+  ratingMin: number; setRatingMin: (n: number) => void;
 
-  ratingMin: number;                   // 0..5
-  setRatingMin: (n: number) => void;
-
+  loading: boolean; error: string | null;
   resetFilters: () => void;
 };
 
 const Ctx = createContext<ProductsState | null>(null);
 
-// глобальные границы цен по сидовым данным
-const PRICE_MIN = Math.min(...seed.map(p => p.price));
-const PRICE_MAX = Math.max(...seed.map(p => p.price));
-
 export const ProductsProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
+  const [all, setAll] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string|null>(null);
+
+  useEffect(() => {
+    let dead = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const items = await api.products();
+        if (!dead) { setAll(items); setError(null); }
+      } catch (e: any) {
+        if (!dead) setError(e?.message || "Не удалось загрузить каталог");
+        // на крайний случай — оставим пусто
+      } finally { if (!dead) setLoading(false); }
+    })();
+    return () => { dead = true; };
+  }, []);
+
+  const priceMin = all.length ? Math.min(...all.map(p => p.price)) : 0;
+  const priceMax = all.length ? Math.max(...all.map(p => p.price)) : 1000;
+
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("Все");
   const [sort, setSort] = useState<SortKey>("popular");
   const [filterPath, setFilterPath] = useState<string[]>([]);
-
-  const [priceFrom, setPriceFrom] = useState<number>(PRICE_MIN);
-  const [priceTo, setPriceTo] = useState<number>(PRICE_MAX);
-  const priceBounds = { min: PRICE_MIN, max: PRICE_MAX };
-
+  const [priceFrom, setPriceFrom] = useState<number>(priceMin);
+  const [priceTo, setPriceTo] = useState<number>(priceMax);
   const [ratingMin, setRatingMin] = useState<number>(0);
 
+  // сброс когда меняется ассортимент
+  useEffect(() => {
+    setPriceFrom(priceMin);
+    setPriceTo(priceMax);
+  }, [priceMin, priceMax]);
+
   const products = useMemo(() => {
-    let list = seed.slice();
+    let list = all.slice();
 
     // путь из модалки категорий имеет приоритет
     if (filterPath.length > 0) {
@@ -65,48 +80,35 @@ export const ProductsProvider: React.FC<React.PropsWithChildren> = ({ children }
       list = list.filter(p => p.category === category);
     }
 
-    // поиск
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter(
-        p =>
-          p.title.toLowerCase().includes(q) ||
-          p.short.toLowerCase().includes(q) ||
-          p.description.toLowerCase().includes(q)
+        p => p.title.toLowerCase().includes(q)
+          || p.short.toLowerCase().includes(q)
+          || p.description.toLowerCase().includes(q)
       );
     }
 
-    // цена
     list = list.filter(p => p.price >= priceFrom && p.price <= priceTo);
+    if (ratingMin > 0) list = list.filter(p => (p.rating ?? 0) >= ratingMin);
 
-    // рейтинг
-    if (ratingMin > 0) {
-      list = list.filter(p => p.rating >= ratingMin);
-    }
-
-    // сортировка
     switch (sort) {
       case "price-asc":  list.sort((a, b) => a.price - b.price); break;
       case "price-desc": list.sort((a, b) => b.price - a.price); break;
-      default:           list.sort((a, b) => b.rating - a.rating); break;
+      default:           list.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0)); break;
     }
-
     return list;
-  }, [search, category, sort, filterPath, priceFrom, priceTo, ratingMin]);
+  }, [all, search, category, sort, filterPath, priceFrom, priceTo, ratingMin]);
 
   const resetFilters = () => {
-    setSearch("");
-    setCategory("Все");
-    setSort("popular");
-    setFilterPath([]);
-    setPriceFrom(PRICE_MIN);
-    setPriceTo(PRICE_MAX);
-    setRatingMin(0);
+    setSearch(""); setCategory("Все"); setSort("popular"); setFilterPath([]);
+    setPriceFrom(priceMin); setPriceTo(priceMax); setRatingMin(0);
   };
 
   return (
     <Ctx.Provider
       value={{
+        all,
         products,
         search, setSearch,
         category, setCategory,
@@ -114,8 +116,9 @@ export const ProductsProvider: React.FC<React.PropsWithChildren> = ({ children }
         filterPath, setFilterPath,
         priceFrom, setPriceFrom,
         priceTo, setPriceTo,
-        priceBounds,
+        priceBounds: { min: priceMin, max: priceMax },
         ratingMin, setRatingMin,
+        loading, error,
         resetFilters
       }}
     >

@@ -1,13 +1,5 @@
 // src/data/reviews.ts
-export type Review = {
-  id: string;
-  productId: string;
-  author: string;
-  rating: 1 | 2 | 3 | 4 | 5;
-  text: string;
-  createdAt: string; // ISO
-  helpful: number;
-};
+import type { Review } from "@/types";
 
 export const seedReviews: Review[] = [
   {

@@ -1,6 +1,7 @@
 // src/components/Footer.tsx
 import styles from "./Footer.module.scss";
 import { Link } from "@/router/Router";
+import LogoMark from "./Logo/LogoMark";
 
 type IconItem = {
   src: string;
@@ -43,11 +44,6 @@ export default function Footer() {
     <footer className={styles.footer}>
       <div className="container">
         <div className={styles.grid}>
-          <div>
-            <div className={styles.brand}>
-              <img src="/logo.png" alt="Mira" />
-            </div>
-          </div>
 
           <nav className={styles.links} aria-label="Ссылки">
             <Link to="/catalog">Каталог</Link>
@@ -112,6 +108,9 @@ export default function Footer() {
               </li>
               <li>
                 <Link to="/cookies">Политика использования cookies</Link>
+              </li>
+              <li>
+                <Link to="/contacts">Контакты</Link>
               </li>
             </ul>
           </div>

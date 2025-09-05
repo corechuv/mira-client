@@ -5,10 +5,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import styles from "./Checkout.module.scss";
 import { Link, navigate } from "@/router/Router";
 import { useEffect, useMemo, useState } from "react";
-import { Address, PackType, loadAddresses, saveAddresses, addrLabel } from "@/utils/addresses";
-
-/* ===== Types / consts ===== */
-type ShipMethod = "dhl" | "express" | "packstation" | "pickup";
+import {
+  loadAddresses,
+  saveAddresses as saveAddressesLocal,
+  addrLabel,
+  listAddresses as listAddressesSrv,
+  createAddress as createAddressSrv,
+} from "@/utils/addresses";
+import type { Address, PackType, ShipMethod } from "@/types";
+import { api } from "@/lib/api";
 
 const FREE_THRESHOLD = 49; // € — бесплатная доставка DHL/Packstation от этой суммы
 const VAT_RATE = 0.19;
@@ -36,6 +41,16 @@ export default function Checkout() {
   const [addresses, setAddresses] = useState<Address[]>(loadAddresses);
   const defaultAddr = addresses.find(a => a.isDefault) ?? addresses[0] ?? null;
 
+  // синхронизируем с бэком при монтировании
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const list = await listAddressesSrv();
+      if (mounted) setAddresses(list);
+    })();
+    return () => { mounted = false; };
+  }, []);
+
   // способ доставки
   const [shipMethod, setShipMethod] = useState<ShipMethod>(() => {
     const list = loadAddresses();
@@ -62,7 +77,6 @@ export default function Checkout() {
     return found;
   }, [addresses, selectedId, shipMethod]);
 
-  // если переключили способ доставки и текущий адрес стал несовместим — подберём первый подходящий
   useEffect(() => {
     if (shipMethod === "pickup") return; // адрес не нужен
     if (selectedAddr) return;
@@ -100,9 +114,9 @@ export default function Checkout() {
   const firstAddress = addresses.length === 0;
   const [saveToBook, setSaveToBook] = useState<boolean>(firstAddress);
   const [makeDefault, setMakeDefault] = useState<boolean>(firstAddress);
-  const [savedFlash, setSavedFlash] = useState(false); // визуальная отметка «сохранено»
+  const [savedFlash, setSavedFlash] = useState(false);
 
-  // валидность ручного адреса (для кнопки «Сохранить адрес сейчас»)
+  // валидность ручного адреса
   const isManualValid = useMemo(() => {
     if (shipMethod === "packstation") {
       return !!postNummer && !!stationNr && /^\d{5}$/.test(zip) && city.trim().length > 0;
@@ -113,8 +127,8 @@ export default function Checkout() {
 
   const eta =
     shipMethod === "express" ? "1 Werktag"
-    : shipMethod === "pickup" ? "Сразу после подтверждения (самовывоз)"
-    : "2–3 Werktage";
+      : shipMethod === "pickup" ? "Сразу после подтверждения (самовывоз)"
+        : "2–3 Werktage";
 
   // единый билдер нового адреса из ручных полей
   const buildManualAddress = (): Address => {
@@ -143,30 +157,30 @@ export default function Checkout() {
   };
 
   // ЯВНОЕ сохранение адреса (без перехода к оплате)
-  const saveManualNow = () => {
+  const saveManualNow = async () => {
     if (!saveToBook) return;
     if (!isManualValid) {
       alert("Проверьте обязательные поля адреса.");
       return;
     }
     const newAddr = buildManualAddress();
-    setAddresses(prev => {
-      let next = [...prev, newAddr];
-      if (newAddr.isDefault) next = next.map(a => ({ ...a, isDefault: a.id === newAddr.id }));
-      saveAddresses(next);
-      return next;
-    });
-    setSelectedId(newAddr.id);
-    setAddrMode("book");
-    // авто-подстройка способа
-    if (newAddr.packType && shipMethod !== "packstation") setShipMethod("packstation");
-    if (!newAddr.packType && shipMethod === "packstation") setShipMethod("dhl");
-    setSavedFlash(true);
-    setTimeout(() => setSavedFlash(false), 1600);
+    try {
+      const next = await createAddressSrv(newAddr);
+      setAddresses(next);
+      const saved = next.find(a => a.id === newAddr.id) || next[next.length - 1];
+      setSelectedId(saved?.id ?? null);
+      setAddrMode("book");
+      if (saved?.packType && shipMethod !== "packstation") setShipMethod("packstation");
+      if (!saved?.packType && shipMethod === "packstation") setShipMethod("dhl");
+      setSavedFlash(true);
+      setTimeout(() => setSavedFlash(false), 1600);
+    } catch (e: any) {
+      alert(e?.message || "Не удалось сохранить адрес.");
+    }
   };
 
-  // сабмит (с сохранением и переходом к оплате)
-  const onSubmit = (e: React.FormEvent) => {
+  // сабмит — сохраняем драфт и переходим на оплату
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (items.length === 0) return alert("Корзина пуста");
     if (!agree) return alert("Необходимо согласиться с условиями.");
@@ -204,27 +218,27 @@ export default function Checkout() {
         };
       }
     } else {
-      // manual — при необходимости сохраним в книгу прямо сейчас
-      if (!isManualValid) {
-        return alert("Проверьте обязательные поля адреса.");
-      }
+      if (!isManualValid) return alert("Проверьте обязательные поля адреса.");
       if (saveToBook) {
-        const newAddr = buildManualAddress();
-        setAddresses(prev => {
-          let next = [...prev, newAddr];
-          if (newAddr.isDefault) next = next.map(a => ({ ...a, isDefault: a.id === newAddr.id }));
-          saveAddresses(next);
-          return next;
-        });
-        setSelectedId(newAddr.id);
-        setAddrMode("book");
+        try {
+          const newAddr = buildManualAddress();
+          const next = await createAddressSrv(newAddr);
+          setAddresses(next);
+          const saved = next.find(a => a.id === newAddr.id) || newAddr;
+          setSelectedId(saved.id);
+          setAddrMode("book");
+        } catch {
+          const newAddr = buildManualAddress();
+          const next = [...addresses, newAddr];
+          saveAddressesLocal(next);
+          setAddresses(next);
+          setSelectedId(newAddr.id);
+          setAddrMode("book");
+        }
       }
-      // адрес в драфт
-      if (shipMethod === "packstation") {
-        addressForDraft = { postNummer, stationNr, zip, city, note: extra };
-      } else {
-        addressForDraft = { street, house, zip, city, note: extra };
-      }
+      addressForDraft = shipMethod === "packstation"
+        ? { postNummer, stationNr, zip, city, note: extra }
+        : { street, house, zip, city, note: extra };
     }
 
     const draft = {

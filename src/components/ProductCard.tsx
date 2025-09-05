@@ -1,9 +1,9 @@
 // src/components/ProductCard.tsx
-import { Link } from "@/router/Router";
 import styles from "./ProductCard.module.scss";
 import { useCart } from "@/contexts/CartContext";
-import { Product } from "@/data/products";
-import { fmtEUR } from "@/utils/money";   // ← добавили
+import type { Product } from "@/types";
+import { fmtEUR } from "@/utils/money";
+import { Link } from "react-router-dom";
 
 export default function ProductCard({ product }: { product: Product }) {
   const { add } = useCart();
@@ -23,7 +23,7 @@ export default function ProductCard({ product }: { product: Product }) {
         </div>
         <p className={styles.desc}>{product.short}</p>
         <div className={styles.bar}>
-          <div className={styles.price}>{fmtEUR(product.price)}</div>  {/* ← было ru-RU ₽ */}
+          <div className={styles.price}>{fmtEUR(product.price)}</div>
           <button className="btn btnPrimary" onClick={() => add(product)}>
             В корзину
           </button>

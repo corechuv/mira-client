@@ -1,0 +1,40 @@
+.container {
+max-width: 1200px;
+margin: 0 auto;
+padding: 24px 16px;
+line-height: 1.6;
+}
+
+
+.meta { font-size: 0.9rem; opacity: 0.8; margin-bottom: 16px; }
+
+
+h1 { font-size: 2rem; margin: 0 0 12px; }
+
+
+h2 { font-size: 1.25rem; margin: 20px 0 8px; }
+
+
+.card {
+border: 1px solid rgba(0,0,0,.12);
+border-radius: 12px;
+padding: 16px;
+}
+
+
+.row {
+display: flex;
+align-items: center;
+gap: 8px;
+margin: 8px 0;
+}
+
+
+.note { font-size: 0.95rem; opacity: 0.9; margin-top: 8px; }
+
+
+.table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+.table th, .table td { border: 1px solid rgba(0,0,0,.12); padding: 8px; text-align: left; }
+
+
+.disclaimer { margin-top: 24px; font-size: 0.9rem; opacity: 0.8; }

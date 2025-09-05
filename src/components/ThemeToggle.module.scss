@@ -1,6 +1,7 @@
 // src/components/ThemeToggle.module.scss
 .toggle {
   display: inline-flex;
+  justify-content: center;
   align-items: center;
   gap: .45rem;
   padding: .45rem .7rem;
@@ -9,6 +10,9 @@
   background: var(--surface);
   color: var(--text);
   cursor: pointer;
+
+  span {
+    display: flex;
+  }
 }
-.icon { line-height: 1; }
 .label { font-size: .9rem; color: var(--muted); }

@@ -1,5 +1,5 @@
 // src/components/ProductsRail.tsx
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import styles from "./ProductsRail.module.scss";
 import { Product } from "@/data/products";
 import ProductCard from "@/components/ProductCard";
@@ -9,7 +9,7 @@ type Props = {
   title?: string;
   items: Product[];
   excludeId?: string;
-  showControls?: boolean; // NEW: стрелки даже без title
+  showControls?: boolean; // стрелки даже без title
 };
 
 export default function ProductsRail({ title, items, excludeId, showControls = true }: Props) {
@@ -18,38 +18,43 @@ export default function ProductsRail({ title, items, excludeId, showControls = t
     [items, excludeId]
   );
 
-  if (!list.length) return null;
-
   const ref = useRef<HTMLDivElement | null>(null);
   const [canL, setCanL] = useState(false);
   const [canR, setCanR] = useState(false);
 
-  const updateArrows = () => {
+  const updateArrows = useCallback(() => {
     const el = ref.current;
     if (!el) return;
     const { scrollLeft, scrollWidth, clientWidth } = el;
     setCanL(scrollLeft > 2);
     setCanR(scrollLeft + clientWidth < scrollWidth - 2);
-  };
+  }, []);
 
   useEffect(() => {
-    updateArrows();
     const el = ref.current;
     if (!el) return;
+
+    updateArrows();
+
     const onScroll = () => updateArrows();
     el.addEventListener("scroll", onScroll, { passive: true });
-    const ro = new ResizeObserver(updateArrows);
-    ro.observe(el);
+
+    let ro: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(updateArrows);
+      ro.observe(el);
+    }
+
     return () => {
       el.removeEventListener("scroll", onScroll);
-      ro.disconnect();
+      ro?.disconnect();
     };
-  }, []);
+  }, [updateArrows]);
 
   // если список поменялся — пересчитать состояние стрелок
   useEffect(() => {
     updateArrows();
-  }, [list.length]);
+  }, [updateArrows, list.length]);
 
   const scrollBy = (dir: 1 | -1) => {
     const el = ref.current;
@@ -57,6 +62,9 @@ export default function ProductsRail({ title, items, excludeId, showControls = t
     const delta = Math.round(el.clientWidth * 0.9) * dir;
     el.scrollBy({ left: delta, behavior: "smooth" });
   };
+
+  // ВАЖНО: guard только после всех хуков
+  if (!list.length) return null;
 
   return (
     <section className={styles.wrap}>

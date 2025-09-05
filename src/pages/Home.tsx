@@ -32,16 +32,14 @@ export default function Home() {
 
       <section className={styles.section}>
         <div className={styles.sectionHead}>
-          <h2>Популярное</h2>
         </div>
-        <ProductsRail items={top} />
+        <ProductsRail title="Популярное" items={top} />
       </section>
 
       <section className={styles.section}>
         <div className={styles.sectionHead}>
-          <h2>Рекомендуем</h2>
         </div>
-        <ProductsRail items={allProducts} />
+        <ProductsRail title="Рекомендуем" items={allProducts} />
       </section>
     </div>
   );

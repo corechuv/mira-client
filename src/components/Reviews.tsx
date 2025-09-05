@@ -1,26 +1,12 @@
 // src/components/Reviews.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import styles from "./Reviews.module.scss";
-import { Review, seedReviews } from "@/data/reviews";
+import type { Review } from "@/types";
+import { api } from "@/lib/api";
 
 type Props = { productId: string };
 
-const LS_KEY = "pm.reviews.v1";
 const LS_VOTES = "pm.reviews.votes.v1";
-
-function loadAll(): Review[] {
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    if (raw) return JSON.parse(raw) as Review[];
-  } catch {}
-  // если пусто — засеять дефолт
-  localStorage.setItem(LS_KEY, JSON.stringify(seedReviews));
-  return seedReviews;
-}
-
-function saveAll(list: Review[]) {
-  localStorage.setItem(LS_KEY, JSON.stringify(list));
-}
 
 function loadVotes(): string[] {
   try {
@@ -33,11 +19,16 @@ function saveVotes(ids: string[]) {
   localStorage.setItem(LS_VOTES, JSON.stringify(ids));
 }
 
-const Stars: React.FC<{ value: number; size?: "sm" | "md"; onChange?: (v: 1|2|3|4|5)=>void; interactive?: boolean }> = ({ value, size="md", onChange, interactive }) => {
-  const arr = [1,2,3,4,5] as const;
+const Stars: React.FC<{
+  value: number;
+  size?: "sm" | "md";
+  onChange?: (v: 1 | 2 | 3 | 4 | 5) => void;
+  interactive?: boolean;
+}> = ({ value, size = "md", onChange, interactive }) => {
+  const arr = [1, 2, 3, 4, 5] as const;
   return (
     <div className={`${styles.stars} ${styles[size]}`} role={interactive ? "radiogroup" : undefined}>
-      {arr.map(n => (
+      {arr.map((n) => (
         <button
           key={n}
           type="button"
@@ -54,71 +45,109 @@ const Stars: React.FC<{ value: number; size?: "sm" | "md"; onChange?: (v: 1|2|3|
 };
 
 export default function Reviews({ productId }: Props) {
-  const [all, setAll] = useState<Review[]>(() => loadAll());
+  const [all, setAll] = useState<Review[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
   const [votes, setVotes] = useState<string[]>(() => loadVotes());
-  const list = useMemo(() => all.filter(r => r.productId === productId), [all, productId]);
+
+  // загрузка с бэка (с офлайн-фолбэком внутри api.reviews)
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      setLoading(true);
+      try {
+        const list = await api.reviews.list(productId);
+        if (mounted) setAll(list);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [productId]);
+
+  // список по товару
+  const list = useMemo(() => all.filter((r) => r.productId === productId), [all, productId]);
+
+  // управление: сорт/фильтр/пагинация
+  const [sort, setSort] = useState<"new" | "helpful" | "rating_desc" | "rating_asc">("new");
+  const [onlyRating, setOnlyRating] = useState<0 | 1 | 2 | 3 | 4 | 5>(0);
+  const [limit, setLimit] = useState(4);
+
+  const filtered = useMemo(() => {
+    return onlyRating ? list.filter((r) => r.rating === onlyRating) : list;
+  }, [list, onlyRating]);
+
+  const shown = useMemo(() => {
+    let arr = filtered.slice();
+    switch (sort) {
+      case "helpful":
+        arr.sort((a, b) => b.helpful - a.helpful || +new Date(b.createdAt) - +new Date(a.createdAt));
+        break;
+      case "rating_desc":
+        arr.sort((a, b) => b.rating - a.rating || +new Date(b.createdAt) - +new Date(a.createdAt));
+        break;
+      case "rating_asc":
+        arr.sort((a, b) => a.rating - b.rating || +new Date(b.createdAt) - +new Date(a.createdAt));
+        break;
+      default:
+        arr.sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
+        break;
+    }
+    return arr.slice(0, limit);
+  }, [filtered, sort, limit]);
 
   // агрегаты
   const stats = useMemo(() => {
-    const total = list.length;
-    const sum = list.reduce((s, r) => s + r.rating, 0);
+    const total = filtered.length;
+    const sum = filtered.reduce((s, r) => s + r.rating, 0);
     const avg = total ? +(sum / total).toFixed(2) : 0;
-    const dist: Record<1|2|3|4|5, number> = {1:0,2:0,3:0,4:0,5:0};
-    list.forEach(r => { dist[r.rating as 1|2|3|4|5]++; });
+    const dist: Record<1 | 2 | 3 | 4 | 5, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    filtered.forEach((r) => {
+      dist[r.rating as 1 | 2 | 3 | 4 | 5]++;
+    });
     return { total, avg, dist };
-  }, [list]);
+  }, [filtered]);
 
-  // управление: сорт/фильтр/пагинация
-  const [sort, setSort] = useState<"new"|"helpful"|"rating_desc"|"rating_asc">("new");
-  const [onlyRating, setOnlyRating] = useState<0|1|2|3|4|5>(0);
-  const [limit, setLimit] = useState(4);
-
-  const shown = useMemo(() => {
-    let arr = list.slice();
-    if (onlyRating) arr = arr.filter(r => r.rating === onlyRating);
-    switch (sort) {
-      case "helpful": arr.sort((a,b)=> b.helpful - a.helpful || +new Date(b.createdAt) - +new Date(a.createdAt)); break;
-      case "rating_desc": arr.sort((a,b)=> b.rating - a.rating || +new Date(b.createdAt) - +new Date(a.createdAt)); break;
-      case "rating_asc": arr.sort((a,b)=> a.rating - b.rating || +new Date(b.createdAt) - +new Date(a.createdAt)); break;
-      default: arr.sort((a,b)=> +new Date(b.createdAt) - +new Date(a.createdAt)); break;
-    }
-    return arr.slice(0, limit);
-  }, [list, sort, onlyRating, limit]);
-
-  // голос "полезно"
-  const vote = (id: string) => {
+  // голос "полезно" (оптимистично + локальный анти-дубль)
+  const vote = async (id: string) => {
     if (votes.includes(id)) return;
-    const next = all.map(r => r.id === id ? { ...r, helpful: r.helpful + 1 } : r);
-    setAll(next); saveAll(next);
-    const nv = [...votes, id]; setVotes(nv); saveVotes(nv);
+    const nv = [...votes, id];
+    setVotes(nv);
+    saveVotes(nv);
+    setAll((prev) => prev.map((r) => (r.id === id ? { ...r, helpful: r.helpful + 1 } : r)));
+    try {
+      await api.reviews.vote(id);
+    } catch {
+      // оставим локальный инкремент; при следующей загрузке серверные значения синхронизируются
+    }
   };
 
   // форма добавления
   const [name, setName] = useState("");
-  const [rating, setRating] = useState<1|2|3|4|5>(5);
+  const [rating, setRating] = useState<1 | 2 | 3 | 4 | 5>(5);
   const [text, setText] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !text.trim()) return;
-    const review: Review = {
-      id: crypto.randomUUID(),
-      productId,
-      author: name.trim(),
-      rating,
-      text: text.trim(),
-      createdAt: new Date().toISOString(),
-      helpful: 0,
-    };
-    const next = [review, ...all];
-    setAll(next); saveAll(next);
-    setName(""); setText(""); setRating(5);
-    if (onlyRating && onlyRating !== rating) setOnlyRating(0);
+    const author = name.trim();
+    const body = text.trim();
+    if (!author || !body) return;
+    setSubmitting(true);
+    try {
+      const created = await api.reviews.add({ productId, author, rating, text: body });
+      setAll((prev) => [created, ...prev]);
+      setName("");
+      setText("");
+      setRating(5);
+      if (onlyRating && onlyRating !== rating) setOnlyRating(0);
+    } catch {
+      alert("Не удалось отправить отзыв. Попробуйте ещё раз.");
+    } finally {
+      setSubmitting(false);
+    }
   };
-
-  useEffect(() => {
-    // если список пуст и нет seed по этому товару — ничего не делаем.
-  }, [productId]);
 
   return (
     <section className={styles.wrap}>
@@ -130,8 +159,8 @@ export default function Reviews({ productId }: Props) {
         </div>
 
         <ul className={styles.dist}>
-          {[5,4,3,2,1].map((n) => {
-            const count = stats.dist[n as 1|2|3|4|5] || 0;
+          {[5, 4, 3, 2, 1].map((n) => {
+            const count = stats.dist[n as 1 | 2 | 3 | 4 | 5] || 0;
             const pct = stats.total ? Math.round((count / stats.total) * 100) : 0;
             return (
               <li key={n} className={styles.distRow}>
@@ -151,7 +180,7 @@ export default function Reviews({ productId }: Props) {
         </ul>
 
         <div className={styles.controls}>
-          <select className="input" value={sort} onChange={e => setSort(e.target.value as any)}>
+          <select className="input" value={sort} onChange={(e) => setSort(e.target.value as any)}>
             <option value="new">Сначала новые</option>
             <option value="helpful">Сначала полезные</option>
             <option value="rating_desc">С высокой оценкой</option>
@@ -160,8 +189,12 @@ export default function Reviews({ productId }: Props) {
         </div>
       </div>
 
+      {loading && list.length === 0 && (
+        <div className="card" style={{ padding: ".8rem" }}>Загружаем отзывы…</div>
+      )}
+
       <div className={styles.list}>
-        {shown.map(r => (
+        {shown.map((r) => (
           <article key={r.id} className={`card-item ${styles.item}`}>
             <header className={styles.itemHead}>
               <div className={styles.author}>{r.author}</div>
@@ -184,16 +217,17 @@ export default function Reviews({ productId }: Props) {
             </footer>
           </article>
         ))}
-        {list.length === 0 && (
+
+        {!loading && filtered.length === 0 && (
           <div className="card" style={{ padding: ".8rem" }}>
             Пока нет отзывов — будьте первым!
           </div>
         )}
       </div>
 
-      {shown.length < list.length && (
+      {shown.length < filtered.length && (
         <div className={styles.moreRow}>
-          <button className="btn" onClick={() => setLimit(l => l + 4)}>Показать ещё</button>
+          <button className="btn" onClick={() => setLimit((l) => l + 4)}>Показать ещё</button>
         </div>
       )}
 
@@ -207,17 +241,19 @@ export default function Reviews({ productId }: Props) {
           className="input"
           placeholder="Имя"
           value={name}
-          onChange={e => setName(e.target.value)}
+          onChange={(e) => setName(e.target.value)}
           required
         />
         <textarea
           placeholder="Ваш отзыв"
           rows={4}
           value={text}
-          onChange={e => setText(e.target.value)}
+          onChange={(e) => setText(e.target.value)}
           required
         />
-        <button className="btn btnPrimary" type="submit">Опубликовать</button>
+        <button className="btn btnPrimary" type="submit" disabled={submitting}>
+          {submitting ? "Отправка…" : "Опубликовать"}
+        </button>
       </form>
     </section>
   );

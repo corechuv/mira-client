@@ -1,0 +1,153 @@
+$bg: #111827;          // slate-900
+$fg: #f9fafb;          // gray-50
+$muted: #d1d5db;       // gray-300
+$primary: #000000;     // indigo-500
+$primary-hover: #000000;
+$danger: #000000;
+
+.wrapper {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  padding: 16px;
+}
+
+.banner {
+  width: min(960px, 100%);
+  background: $bg;
+  color: $fg;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.4);
+  padding: 16px;
+}
+
+.header {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0;
+}
+
+.text {
+  margin: 8px 0 0 0;
+  color: $muted;
+  font-size: 14px;
+
+  a {
+    color: $fg;
+    text-decoration: underline;
+  }
+}
+
+.controls {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+
+  @media (min-width: 720px) {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.switch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255,255,255,0.06);
+  padding: 10px 12px;
+  border-radius: 10px;
+
+  label {
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  span {
+    color: $muted;
+    font-size: 12px;
+  }
+}
+
+.switchText {
+  display: flex;
+  align-items: center;
+  flex-direction: row;
+  gap: 1rem;
+  flex: 1;
+}
+
+.toggle {
+  --w: 44px;
+  position: relative;
+  width: var(--w);
+  height: 26px;
+  border-radius: 999px;
+  background: #374151; // slate-700
+  transition: background .2s ease;
+  flex-shrink: 0;
+
+  &.on { background: $primary; }
+
+  &::after {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: white;
+    transition: transform .2s ease;
+  }
+  &.on::after { transform: translateX(18px); }
+
+  input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+}
+
+.actions {
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.btn {
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 14px;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.primary {
+  background: $primary;
+  color: white;
+  &:hover { background: $primary-hover; }
+}
+
+.ghost {
+  background: transparent;
+  border-color: #374151;
+  color: $fg;
+}
+
+.danger {
+  background: $danger;
+  color: white;
+}

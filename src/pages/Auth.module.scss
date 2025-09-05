@@ -8,9 +8,6 @@
     display: grid;
     place-items: center;
     padding: 1.2rem;
-    background:
-        radial-gradient(60% 40% at 100% 0%, rgba(136, 42, 83, 0.18), transparent),
-        linear-gradient(180deg, #0e0e12, #0a0a0d);
 }
 
 .card {
@@ -22,13 +19,14 @@
     gap: .8rem;
 }
 
-.logo {
+.logoMark {
     width: 70px;
     height: 70px;
     margin: 0 auto;
     display: block;
     margin-top: 20px;
     margin-bottom: 30px;
+    color: var(--logo-color);
 }
 
 .tabs {
@@ -44,15 +42,15 @@
     padding: .45rem .8rem;
     border-radius: 10px;
     border: transparent;
-    background: rgba(255, 255, 255, 0.02);
+    background: rgba(70, 70, 70, 0.03);
     color: var(--muted);
     cursor: pointer;
 }
 
 .tabActive {
-    background: rgba(255, 46, 138, 0.12);
+    background: #1b1b1bed;
     color: #fff;
-    border-color: rgba(255, 46, 138, 0.45);
+    border-color: #1b1b1bed;
 }
 
 .error {
@@ -93,7 +91,7 @@
 .linkBtn {
     background: transparent;
     border: 0;
-    color: #fff;
+    color: var(--text);
     cursor: pointer;
     padding: 0 .2rem;
 }

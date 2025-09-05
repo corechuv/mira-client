@@ -1,4 +1,5 @@
 // src/components/ThemeToggle.tsx
+import Icon from "./Icon";
 import styles from "./ThemeToggle.module.scss";
 import { useTheme } from "@/contexts/ThemeContext";
 
@@ -14,7 +15,7 @@ export default function ThemeToggle() {
       title={isLight ? "Dark" : "Light"}
     >
       <span className={styles.icon} aria-hidden>
-        {isLight ? "🌙" : "🌞"}
+        {isLight ? <Icon name="moon" /> : <Icon name="sun" />}
       </span>
       <span className={styles.label}>{isLight ? "Dark" : "Light"}</span>
     </button>

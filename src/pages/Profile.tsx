@@ -1,69 +1,29 @@
 // src/pages/Profile.tsx
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import styles from "./Profile.module.scss";
 import { useAuth } from "@/contexts/AuthContext";
 import { Link } from "@/router/Router";
 import { fmtEUR } from "@/utils/money";
-import { Address, loadAddresses, saveAddresses, emptyAddress } from "@/utils/addresses";
+import {
+  loadAddresses,
+  emptyAddress,
+  listAddresses as listAddressesSrv,
+  createAddress as createAddressSrv,
+  updateAddress as updateAddressSrv,
+  removeAddress as removeAddressSrv,
+  setDefaultAddress as setDefaultAddressSrv,
+  saveAddresses as saveAddressesLocal,
+} from "@/utils/addresses";
+import type { Address } from "@/types";
+import type { Order, OrderStatus } from "@/types";
+import { listOrders as listOrdersSrv, requestReturn as requestReturnSrv, cancelOrder as cancelOrderSrv } from "@/utils/orders";
 
-/* ===== Types ===== */
-type CartItem = {
-  id: string;
-  qty: number;
-  title: string;
-  price: number;
-  slug: string;
-  imageUrl: string;
-};
-
-type OrderStatus =
-  | "processing"         // оформлен, обрабатываем
-  | "packed"             // собираем
-  | "shipped"            // отправлен
-  | "delivered"          // доставлен
-  | "cancelled"          // отменён (до отгрузки)
-  | "refund_requested"   // возврат запрошен
-  | "refunded";          // возврат оформлен
-
-type RefundInfo = {
-  requestedAt: string;
-  reason?: string;
-  comment?: string;
-  approved?: boolean;
-  processedAt?: string;
-};
-
-type AnyOrder = {
-  id: string;
-  createdAt: string;
-  items: CartItem[];
-  total?: number;
-  totals?: { subtotal?: number; shipping?: number; grand: number };
-  customer?: { email?: string };
-  shipping?: { method?: string; packType?: string };
-  payment?: { status?: "paid" | "pending" | "failed"; last4?: string };
-
-  // новые поля
-  status?: OrderStatus;
-  refund?: RefundInfo;
-};
-
-const ORDERS_KEY = "pm.orders.v1";
-
-/* ===== Storage helpers ===== */
-function loadOrdersRaw(): AnyOrder[] {
-  try { return JSON.parse(localStorage.getItem(ORDERS_KEY) || "[]"); }
-  catch { return []; }
-}
-function saveOrdersRaw(list: AnyOrder[]) {
-  localStorage.setItem(ORDERS_KEY, JSON.stringify(list));
-}
 
 /* ===== Utils ===== */
 function addrToLines(a: Address): string[] {
   const l1 = [a.firstName, a.lastName].filter(Boolean).join(" ");
   const l2 = a.packType
-    ? `${a.packType === "postfiliale" ? "Postfiliale" : "Packstation"}${a.stationNr ? " #"+a.stationNr : ""}`
+    ? `${a.packType === "postfiliale" ? "Postfiliale" : "Packstation"}${a.stationNr ? " #" + a.stationNr : ""}`
     : [a.street, a.house].filter(Boolean).join(" ");
   const l3 = [a.zip, a.city].filter(Boolean).join(" ");
   return [l1, l2, l3].filter(Boolean);
@@ -90,14 +50,28 @@ const BADGES: Partial<Record<OrderStatus, "info" | "warn" | "good" | "bad">> = {
 };
 
 const nowMs = () => Date.now();
-const minsSince = (iso: string) => (nowMs() - +new Date(iso)) / 60000;
 const daysSince = (iso: string) => (nowMs() - +new Date(iso)) / 86400000;
 
-/* ===================================================================== */
+/* ======================= Вью «гость» ======================= */
+function ProfileGuest() {
+  return (
+    <div className="container">
+      <h1>Профиль</h1>
+      <div className={`card ${styles.empty}`}>
+        <div>Вы не авторизованы.</div>
+        <div className={styles.emptyActions}>
+          <Link to="/auth?next=/profile" className="btn btnPrimary">Войти / Регистрация</Link>
+          <Link to="/" className="btn">На главную</Link>
+        </div>
+      </div>
+    </div>
+  );
+}
 
-export default function Profile() {
+/* ================== Вью «авторизован» ===================== */
+function ProfileAuthed() {
   const auth = useAuth();
-  const user = auth.user;
+  const user = auth.user!;
 
   // tabs
   const initTab = (): "profile" | "address" | "orders" => {
@@ -113,50 +87,61 @@ export default function Profile() {
       const url = new URL(window.location.href);
       url.searchParams.set("tab", t);
       history.replaceState(null, "", url.toString());
-    } catch {}
+    } catch { }
   };
 
-  if (!user) {
-    return (
-      <div className="container">
-        <h1>Профиль</h1>
-        <div className={`card ${styles.empty}`}>
-          <div>Вы не авторизованы.</div>
-          <div className={styles.emptyActions}>
-            <Link to="/auth?next=/profile" className="btn btnPrimary">Войти / Регистрация</Link>
-            <Link to="/" className="btn">На главную</Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   /* --------------------- Профиль --------------------- */
-  const [name, setName]   = useState(user.name || "");
+  const [name, setName] = useState(user.name || "");
   const [email, setEmail] = useState(user.email || "");
-  const saveProfile = (e: React.FormEvent) => {
+
+  useEffect(() => {
+    setName(user?.name || "");
+    setEmail(user?.email || "");
+  }, [user?.name, user?.email]);
+
+  const saveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     const nextName = name.trim();
     const nextEmail = email.trim();
     try {
-      (auth as any)?.setUser
-        ? (auth as any).setUser({ ...user, name: nextName, email: nextEmail })
-        : auth.login(nextEmail, nextName);
-    } catch {}
+      await auth.updateProfile({ name: nextName, email: nextEmail });
+      // тут можно показать "Сохранено"
+    } catch (err: any) {
+      alert(err?.message || "Не удалось сохранить профиль.");
+    }
   };
 
   /* --------------------- Адреса --------------------- */
   const [addresses, setAddresses] = useState<Address[]>(loadAddresses());
+  const [addrLoading, setAddrLoading] = useState<boolean>(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState<boolean>(addresses.length === 0);
   const suggestFirst = user.name?.split(" ")[0] || "";
   const [draft, setDraft] = useState<Address>(emptyAddress(suggestFirst));
 
+  // первичная синхронизация с сервером
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      setAddrLoading(true);
+      try {
+        const list = await listAddressesSrv();
+        if (mounted) {
+          setAddresses(list);
+          setShowForm(list.length === 0);
+        }
+      } finally {
+        if (mounted) setAddrLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
   const startAdd = () => { setEditingId(null); setDraft(emptyAddress(suggestFirst)); setShowForm(true); };
   const startEdit = (a: Address) => { setEditingId(a.id); setDraft({ ...a }); setShowForm(true); };
   const cancelForm = () => { setShowForm(false); setEditingId(null); setDraft(emptyAddress(suggestFirst)); };
 
-  const submitAddress = (e: React.FormEvent) => {
+  const submitAddress = async (e: React.FormEvent) => {
     e.preventDefault();
     const d = { ...draft };
     if (!d.firstName.trim() || !d.lastName.trim() || !d.zip.trim() || !d.city.trim()) {
@@ -164,92 +149,91 @@ export default function Profile() {
       return;
     }
     d.firstName = d.firstName.trim();
-    d.lastName  = d.lastName.trim();
-    d.street    = d.street.trim();
-    d.house     = d.house.trim();
-    d.zip       = d.zip.trim();
-    d.city      = d.city.trim();
-    if (!d.id) d.id = crypto.randomUUID();
+    d.lastName = d.lastName.trim();
+    d.street = d.street.trim();
+    d.house = d.house.trim();
+    d.zip = d.zip.trim();
+    d.city = d.city.trim();
 
-    setAddresses(prev => {
-      let next: Address[];
-      if (editingId) {
-        next = prev.map(x => x.id === editingId ? d : x);
-      } else {
-        const makeDefault = prev.length === 0 || d.isDefault;
-        next = [...prev, { ...d, isDefault: makeDefault ? true : d.isDefault }];
-        if (makeDefault) next = next.map(x => x.id === d.id ? { ...x, isDefault: true } : { ...x, isDefault: false });
-      }
-      saveAddresses(next);
-      return next;
-    });
-    cancelForm();
+    try {
+      setAddrLoading(true);
+      const next = editingId
+        ? await updateAddressSrv(editingId, d)
+        : await createAddressSrv({ ...d, id: d.id || crypto.randomUUID() });
+      setAddresses(next);
+      setShowForm(false);
+      setEditingId(null);
+      setDraft(emptyAddress(suggestFirst));
+    } catch (err: any) {
+      alert(err?.message || "Не удалось сохранить адрес.");
+    } finally {
+      setAddrLoading(false);
+    }
   };
 
-  const removeAddress = (id: string) => {
+  const removeAddress = async (id: string) => {
     if (!confirm("Удалить этот адрес?")) return;
-    setAddresses(prev => {
-      const next = prev.filter(x => x.id !== id);
-      if (!next.some(x => x.isDefault) && next.length > 0) next[0].isDefault = true;
-      saveAddresses(next);
-      return [...next];
-    });
+    try {
+      setAddrLoading(true);
+      const next = await removeAddressSrv(id);
+      setAddresses(next);
+    } catch (err: any) {
+      alert(err?.message || "Не удалось удалить адрес.");
+    } finally {
+      setAddrLoading(false);
+    }
   };
-  const setDefault = (id: string) => {
-    setAddresses(prev => {
-      const next = prev.map(x => ({ ...x, isDefault: x.id === id }));
-      saveAddresses(next);
-      return next;
-    });
+
+  const setDefault = async (id: string) => {
+    try {
+      setAddrLoading(true);
+      const next = await setDefaultAddressSrv(id);
+      setAddresses(next);
+    } catch (err: any) {
+      alert(err?.message || "Не удалось изменить адрес по умолчанию.");
+    } finally {
+      setAddrLoading(false);
+    }
   };
 
   /* --------------------- Заказы --------------------- */
-  // дергаем версию при изменениях (отмена/возврат), чтобы пересчитать список
-  const [ordersVer, setOrdersVer] = useState(0);
+  const [orders, setOrders] = useState<Array<Order & { _total: number }>>([]);
 
-  const orders = useMemo(() => {
-    const raw = loadOrdersRaw();
-    const mine = raw.filter(o => (o.customer?.email || "").toLowerCase() === (user.email || "").toLowerCase());
-    return mine
-      .map(o => {
-        const total = o.total ?? o.totals?.grand ?? o.items.reduce((s,i)=>s+i.price*i.qty,0);
+  const reloadOrders = async () => {
+    const list = await listOrdersSrv();
+    const cooked = list
+      .map((o) => {
+        const total = o.total ?? o.totals?.grand ?? o.items.reduce((s, i) => s + i.price * i.qty, 0);
         const status: OrderStatus = (o.status as OrderStatus) || "processing";
         return { ...o, status, _total: total as number };
       })
-      .sort((a,b)=> +new Date(b.createdAt) - +new Date(a.createdAt));
-  }, [user.email, ordersVer]);
+      .sort((a, b) => +new Date(b.createdAt) - +new Date(a.createdAt));
+    setOrders(cooked);
+  };
 
-  // helpers для статусов/действий
-  const canCancel = (o: AnyOrder & { _total: number }): boolean => {
+  useEffect(() => { reloadOrders(); }, [user.email]);
+
+  const canCancel = (o: Order & { _total: number }): boolean => {
     const st = (o.status as OrderStatus) || "processing";
     if (["cancelled", "shipped", "delivered", "refund_requested", "refunded"].includes(st)) return false;
     const isPaid = o.payment?.status === "paid";
-    // Отменяем без возврата — только для неоплаченных
     if (!isPaid) return true;
-    // Оплаченный — не отменяем (предлагаем возврат)
     return false;
   };
 
-  const canRequestReturn = (o: AnyOrder & { _total: number }): boolean => {
+  const canRequestReturn = (o: Order & { _total: number }): boolean => {
     const st = (o.status as OrderStatus) || "processing";
     if (["cancelled", "refund_requested", "refunded"].includes(st)) return false;
     const isPaid = o.payment?.status === "paid";
     if (!isPaid) return false;
-    // окно на возврат 30 дней
     return daysSince(o.createdAt) <= 30;
   };
 
-  const updateOrder = (id: string, patch: Partial<AnyOrder>) => {
-    const all = loadOrdersRaw();
-    const next = all.map(o => o.id === id ? { ...o, ...patch } : o);
-    saveOrdersRaw(next);
-    setOrdersVer(v => v + 1);
-  };
-
-  const cancelOrder = (o: AnyOrder & { _total: number }) => {
+  const cancelOrder = async (o: Order & { _total: number }) => {
     if (!canCancel(o)) return;
     if (!confirm("Отменить этот заказ?")) return;
-    updateOrder(o.id, { status: "cancelled" });
+    await cancelOrderSrv(o.id);
+    await reloadOrders();
     alert("Заказ отменён.");
   };
 
@@ -257,31 +241,22 @@ export default function Profile() {
   const [returnForId, setReturnForId] = useState<string | null>(null);
   const [retReason, setRetReason] = useState("");
   const [retComment, setRetComment] = useState("");
-  const openReturnForm = (o: AnyOrder & { _total: number }) => {
+
+  const openReturnForm = (o: Order & { _total: number }) => {
     setReturnForId(o.id);
     setRetReason("");
     setRetComment("");
   };
-  const submitReturn = (e: React.FormEvent) => {
+
+  const submitReturn = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!returnForId) return;
-    if (!retReason) {
-      alert("Пожалуйста, выберите причину возврата.");
-      return;
-    }
-    updateOrder(returnForId, {
-      status: "refund_requested",
-      refund: {
-        requestedAt: new Date().toISOString(),
-        reason: retReason,
-        comment: retComment || "",
-        approved: false,
-      }
-    });
+    if (!retReason) { alert("Пожалуйста, выберите причину возврата."); return; }
+    await requestReturnSrv(returnForId, retReason, retComment || "");
     setReturnForId(null);
-    setRetReason("");
-    setRetComment("");
-    alert("Запрос на возврат отправлен. Мы свяжемся с вами по email.");
+    setRetReason(""); setRetComment("");
+    await reloadOrders();
+    alert("Запрос на возврат отправлен.");
   };
 
   return (
@@ -289,9 +264,9 @@ export default function Profile() {
       <h1>Профиль</h1>
 
       <div className={styles.tabs} role="tablist">
-        <button role="tab" aria-selected={tab==="profile"} className={tab==="profile" ? styles.tabActive : styles.tab} onClick={()=>setTab("profile")}>Профиль</button>
-        <button role="tab" aria-selected={tab==="address"}  className={tab==="address"  ? styles.tabActive : styles.tab} onClick={()=>setTab("address")}>Адреса</button>
-        <button role="tab" aria-selected={tab==="orders"}   className={tab==="orders"   ? styles.tabActive : styles.tab} onClick={()=>setTab("orders")}>Заказы</button>
+        <button role="tab" aria-selected={tab === "profile"} className={tab === "profile" ? styles.tabActive : styles.tab} onClick={() => setTab("profile")}>Профиль</button>
+        <button role="tab" aria-selected={tab === "address"} className={tab === "address" ? styles.tabActive : styles.tab} onClick={() => setTab("address")}>Адреса</button>
+        <button role="tab" aria-selected={tab === "orders"} className={tab === "orders" ? styles.tabActive : styles.tab} onClick={() => setTab("orders")}>Заказы</button>
         <div className={styles.spacer} />
         <button className="btn" onClick={auth.logout}>Выйти</button>
       </div>
@@ -302,11 +277,11 @@ export default function Profile() {
           <div className={styles.twoCols}>
             <label className={styles.field}>
               <span>Имя</span>
-              <input className="input" value={name} onChange={e=>setName(e.target.value)} required />
+              <input className="input" value={name} onChange={e => setName(e.target.value)} required />
             </label>
             <label className={styles.field}>
               <span>Email</span>
-              <input className="input" type="email" value={email} onChange={e=>setEmail(e.target.value)} required />
+              <input className="input" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
             </label>
           </div>
           <button className="btn btnPrimary" type="submit">Сохранить</button>
@@ -319,8 +294,12 @@ export default function Profile() {
         <div className={styles.addrWrap}>
           <div className={styles.addrHead}>
             <h2>Мои адреса</h2>
-            <button className="btn btnPrimary" onClick={startAdd}>Добавить адрес</button>
+            <button className="btn btnPrimary" onClick={startAdd} disabled={addrLoading}>Добавить адрес</button>
           </div>
+
+          {addrLoading && (
+            <div className="card" style={{ padding: ".7rem" }}>Синхронизируем адреса…</div>
+          )}
 
           {addresses.length === 0 ? (
             <div className="card" style={{ padding: ".9rem" }}>
@@ -345,9 +324,9 @@ export default function Profile() {
                   </div>
 
                   <div className={styles.addrActions}>
-                    {!a.isDefault && <button className="btn" onClick={()=>setDefault(a.id)}>Сделать основным</button>}
-                    <button className="btn" onClick={()=>startEdit(a)}>Редактировать</button>
-                    <button className="btn" onClick={()=>removeAddress(a.id)}>Удалить</button>
+                    {!a.isDefault && <button className="btn" onClick={() => setDefault(a.id)} disabled={addrLoading}>Сделать основным</button>}
+                    <button className="btn" onClick={() => startEdit(a)} disabled={addrLoading}>Редактировать</button>
+                    <button className="btn" onClick={() => removeAddress(a.id)} disabled={addrLoading}>Удалить</button>
                   </div>
                 </article>
               ))}
@@ -363,7 +342,7 @@ export default function Profile() {
                     <input
                       type="checkbox"
                       checked={!!draft.isDefault}
-                      onChange={(e)=>setDraft(d=>({ ...d, isDefault: e.target.checked }))}
+                      onChange={(e) => setDraft((d: Address) => ({ ...d, isDefault: e.target.checked }))}
                     />
                     <span>Сделать адресом по умолчанию</span>
                   </label>
@@ -373,44 +352,44 @@ export default function Profile() {
               <div className={styles.twoCols}>
                 <label className={styles.field}>
                   <span>Имя (Vorname)</span>
-                  <input className="input" value={draft.firstName} onChange={e=>setDraft(d=>({ ...d, firstName: e.target.value }))} required />
+                  <input className="input" value={draft.firstName} onChange={e => setDraft((d: Address) => ({ ...d, firstName: e.target.value }))} required />
                 </label>
                 <label className={styles.field}>
                   <span>Фамилия (Nachname)</span>
-                  <input className="input" value={draft.lastName} onChange={e=>setDraft(d=>({ ...d, lastName: e.target.value }))} required />
+                  <input className="input" value={draft.lastName} onChange={e => setDraft((d: Address) => ({ ...d, lastName: e.target.value }))} required />
                 </label>
               </div>
 
               <div className={styles.twoCols}>
                 <label className={styles.field}>
                   <span>Улица (Straße)</span>
-                  <input className="input" value={draft.street} onChange={e=>setDraft(d=>({ ...d, street: e.target.value }))} />
+                  <input className="input" value={draft.street} onChange={e => setDraft((d: Address) => ({ ...d, street: e.target.value }))} />
                 </label>
                 <label className={styles.field}>
                   <span>Дом (Hausnummer)</span>
-                  <input className="input" value={draft.house} onChange={e=>setDraft(d=>({ ...d, house: e.target.value }))} />
+                  <input className="input" value={draft.house} onChange={e => setDraft((d: Address) => ({ ...d, house: e.target.value }))} />
                 </label>
               </div>
 
               <div className={styles.twoCols}>
                 <label className={styles.field}>
                   <span>PLZ</span>
-                  <input className="input" value={draft.zip} onChange={e=>setDraft(d=>({ ...d, zip: e.target.value }))} inputMode="numeric" pattern="\d{5}" required />
+                  <input className="input" value={draft.zip} onChange={e => setDraft((d: Address) => ({ ...d, zip: e.target.value }))} inputMode="numeric" pattern="\d{5}" required />
                 </label>
                 <label className={styles.field}>
                   <span>Город (Ort)</span>
-                  <input className="input" value={draft.city} onChange={e=>setDraft(d=>({ ...d, city: e.target.value }))} required />
+                  <input className="input" value={draft.city} onChange={e => setDraft((d: Address) => ({ ...d, city: e.target.value }))} required />
                 </label>
               </div>
 
               <div className={styles.twoCols}>
                 <label className={styles.field}>
                   <span>Телефон</span>
-                  <input className="input" value={draft.phone || ""} onChange={e=>setDraft(d=>({ ...d, phone: e.target.value }))} placeholder="+49 ..." />
+                  <input className="input" value={draft.phone || ""} onChange={e => setDraft((d: Address) => ({ ...d, phone: e.target.value }))} placeholder="+49 ..." />
                 </label>
                 <label className={styles.field}>
                   <span>Комментарий</span>
-                  <input className="input" value={draft.note || ""} onChange={e=>setDraft(d=>({ ...d, note: e.target.value }))} placeholder="Подъезд, этаж, код..." />
+                  <input className="input" value={draft.note || ""} onChange={e => setDraft((d: Address) => ({ ...d, note: e.target.value }))} placeholder="Подъезд, этаж, код..." />
                 </label>
               </div>
 
@@ -419,7 +398,7 @@ export default function Profile() {
                 <div className={styles.twoCols}>
                   <label className={styles.field}>
                     <span>Тип пункта</span>
-                    <select className="input" value={draft.packType || ""} onChange={e=>setDraft(d=>({ ...d, packType: e.target.value as any }))}>
+                    <select className="input" value={draft.packType || ""} onChange={e => setDraft((d: Address) => ({ ...d, packType: e.target.value as any }))}>
                       <option value="">—</option>
                       <option value="packstation">Packstation</option>
                       <option value="postfiliale">Postfiliale</option>
@@ -427,13 +406,13 @@ export default function Profile() {
                   </label>
                   <label className={styles.field}>
                     <span>Postnummer</span>
-                    <input className="input" value={draft.postNummer || ""} onChange={e=>setDraft(d=>({ ...d, postNummer: e.target.value }))} />
+                    <input className="input" value={draft.postNummer || ""} onChange={e => setDraft((d: Address) => ({ ...d, postNummer: e.target.value }))} />
                   </label>
                 </div>
                 <div className={styles.twoCols}>
                   <label className={styles.field}>
                     <span>{draft.packType === "postfiliale" ? "Filiale Nr" : "Packstation Nr"}</span>
-                    <input className="input" value={draft.stationNr || ""} onChange={e=>setDraft(d=>({ ...d, stationNr: e.target.value }))} />
+                    <input className="input" value={draft.stationNr || ""} onChange={e => setDraft((d: Address) => ({ ...d, stationNr: e.target.value }))} />
                   </label>
                   <div />
                 </div>
@@ -441,8 +420,8 @@ export default function Profile() {
               </div>
 
               <div className={styles.formActions}>
-                <button className="btn" type="button" onClick={cancelForm}>Отмена</button>
-                <button className="btn btnPrimary" type="submit">{editingId ? "Сохранить" : "Добавить"}</button>
+                <button className="btn" type="button" onClick={cancelForm} disabled={addrLoading}>Отмена</button>
+                <button className="btn btnPrimary" type="submit" disabled={addrLoading}>{editingId ? "Сохранить" : "Добавить"}</button>
               </div>
             </form>
           )}
@@ -463,7 +442,7 @@ export default function Profile() {
                 return (
                   <article key={o.id} className={`card ${styles.orderCard}`}>
                     <header className={styles.orderHead}>
-                      <div>Заказ <b>{o.id.slice(0,8)}</b></div>
+                      <div>Заказ <b>{o.id.slice(0, 8)}</b></div>
                       <div className={styles.orderBadges}>
                         <span className="badge">{new Date(o.createdAt).toLocaleString("de-DE")}</span>
                         {o.payment?.status === "paid"
@@ -500,7 +479,6 @@ export default function Profile() {
                       <b>{fmtEUR((o as any)._total)}</b>
                     </div>
 
-                    {/* Действия по заказу */}
                     <div className={styles.orderActions}>
                       {canCancel(o as any) && (
                         <button className="btn" onClick={() => cancelOrder(o as any)}>
@@ -514,7 +492,6 @@ export default function Profile() {
                       )}
                     </div>
 
-                    {/* Форма возврата (инлайн) */}
                     {returnForId === o.id && (
                       <form className={styles.returnForm} onSubmit={submitReturn}>
                         <div className={styles.twoCols}>
@@ -561,4 +538,21 @@ export default function Profile() {
       )}
     </div>
   );
+}
+
+/* ================== Обёртка (экспорт) ===================== */
+export default function Profile() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="container">
+        <h1>Профиль</h1>
+        <div className="card" style={{ padding: ".9rem" }}>Загружаем профиль…</div>
+      </div>
+    );
+  }
+
+  if (!user) return <ProfileGuest />;
+  return <ProfileAuthed />;
 }

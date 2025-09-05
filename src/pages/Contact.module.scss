@@ -1,0 +1,68 @@
+.container {
+max-width: 1200px;
+margin: 0 auto;
+padding: 24px 16px;
+line-height: 1.6;
+}
+
+
+.meta { font-size: 0.9rem; opacity: 0.8; margin-bottom: 16px; }
+
+
+h1 { font-size: 2rem; margin: 0 0 12px; }
+
+
+h2 { font-size: 1.25rem; margin: 20px 0 8px; }
+
+
+.grid {
+display: grid;
+grid-template-columns: 1fr;
+gap: 16px;
+}
+
+
+@media (min-width: 860px) {
+.grid { grid-template-columns: 1fr 1fr; }
+}
+
+
+.card {
+border: 1px solid rgba(0,0,0,.12);
+border-radius: 12px;
+padding: 16px;
+}
+
+
+.form { display: grid; gap: 12px; }
+
+
+label { display: grid; gap: 6px; }
+
+
+input, textarea {
+border: 1px solid rgba(0,0,0,.2);
+border-radius: 8px;
+padding: 10px 12px;
+font: inherit;
+}
+
+
+.button {
+display: inline-block;
+border: none;
+border-radius: 999px;
+padding: 10px 16px;
+cursor: pointer;
+background: #111;
+color: #fff;
+}
+
+
+.button:disabled { opacity: .6; cursor: not-allowed; }
+
+
+.success { border-left: 4px solid #0a0; padding: 12px; background: rgba(0,128,0,.05); }
+
+
+.disclaimer { margin-top: 24px; font-size: 0.9rem; opacity: 0.8; }

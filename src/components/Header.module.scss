@@ -5,7 +5,6 @@
   z-index: 20;
   background: var(--header-bg);
   backdrop-filter: var(--header-backdrop);
-  border-bottom: 1px solid var(--header-border);
 }
 
 .bar {
@@ -21,9 +20,8 @@
   align-items: center;
   gap: .6rem;
   text-decoration: none;
-  color: var(--text);
 }
-.logoImage { width: 32px; height: 32px; object-fit: cover; }
+.logoMark { width: 32px; height: 32px; object-fit: cover; color: var(--logo-color); }
 .logoText { font-weight: 800; letter-spacing: .2px; }
 
 .nav {
@@ -69,8 +67,8 @@
   justify-content: center;
   font-size: .75rem;
   border-radius: 999px;
-  background: rgba(255,46,138,.18);
-  color: #fff;
+  background: #580127;
+  color: white;
 }
 
 /* адаптив */

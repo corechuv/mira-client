@@ -3,9 +3,9 @@
 .tabs { display: grid; grid-auto-flow: column; gap: .5rem; align-items: center; margin-bottom: .8rem; }
 .tab, .tabActive {
   padding: .45rem .8rem; border-radius: 10px; cursor: pointer;
-  border: 1px solid transparent; background: rgba(255,255,255,0.03); color: var(--muted);
+  border: 1px solid transparent; background: rgba(70, 70, 70, 0.03); color: var(--muted);
 }
-.tabActive { background: rgba(255,46,138,0.12); border-color: transparent; color: #fff; }
+.tabActive { background: #1b1b1bed; border-color: #1b1b1bed; color: #fff; }
 .spacer { flex: 1; }
 
 /* Forms common */

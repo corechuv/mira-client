@@ -17,10 +17,11 @@
   gap: .6rem;
   font-weight: 700;
 
-  img {
+  .logoMark {
     height: 36px;
     width: auto;
     display: block;
+    color: var(--logo-color);
   }
 }
 .logoDot {
@@ -40,7 +41,6 @@
   text-decoration: none;
   color: var(--text);
 }
-.links a:hover { color: #fff; }
 
 .iconSection {
   margin-top: 3rem;

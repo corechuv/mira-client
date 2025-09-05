@@ -25,14 +25,13 @@ export default function Cart() {
                   <Link to={`/product/${i.slug}`} className={styles.link}>Подробнее</Link>
                 </div>
               </div>
-              <div className={styles.cell}>
+              <div className={styles.cell} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
                 <input
-                  className="input"
+                  className={`${styles.qty}`}
                   type="number"
                   min={1}
                   value={i.qty}
                   onChange={e => setQty(i.id, Math.max(1, Number(e.target.value)))}
-                  style={{ width: 80 }}
                 />
               </div>
               <div className={styles.cell}>{fmtEUR(i.price * i.qty)}</div>

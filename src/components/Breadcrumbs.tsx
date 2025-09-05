@@ -22,7 +22,7 @@ export default function Breadcrumbs({ items }: { items: Crumb[] }) {
               ) : !isLast && c.onClick ? (
                 <button className={styles.linkButton} onClick={c.onClick}>{c.label}</button>
               ) : (
-                <span className={styles.current}>{c.label}</span>
+                <span className={styles.current}></span>
               )}
               {!isLast && <span className={styles.sep}>›</span>}
             </li>

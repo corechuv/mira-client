@@ -13,6 +13,9 @@
 /* Тёмная (дефолт) */
 :root,
 :root[data-theme="dark"] {
+  --logo-color: #FFEFF4;
+
+
   --bg: #0a0a0a;
   --surface: #111114;
   --surface-2: #16161a;
@@ -35,6 +38,9 @@
 
 /* Светлая */
 :root[data-theme="light"] {
+  --logo-color: #ff1b82;
+
+
   --bg: #ffffff;
   --surface: #ffffff;
   --surface-2: #f3f4f6;
@@ -113,14 +119,14 @@ button { font: inherit; }
 /* Кнопки */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
-  padding: .6rem 1rem; font-weight: 500; border-radius: 8px;
+  padding: .6rem 1rem; font-weight: 500; border-radius: 30px;
   border: 1px solid var(--border-mid);
   background: var(--surface); color: var(--text);
   cursor: pointer; transition: transform .08s ease, background .2s ease, border-color .2s ease;
 }
 .btn:hover { transform: translateY(-1px); border-color: var(--border-strong); }
 .btn:active { transform: translateY(0); }
-.btnPrimary { background: var(--pink); color: white; }
+.btnPrimary { background: black; color: white; }
 .btn100 { width: 100%; }
 .btnGhost { background: transparent; border-color: var(--border-mid); }
 
@@ -130,7 +136,7 @@ button { font: inherit; }
   padding: 0 1rem;
   border-radius: 12px; font-size: 16px;
   background: var(--surface-2);
-  border: 1px solid var(--border-weak);
+  border: 1px solid transparent;
   color: var(--text); outline: none;
 }
 .input::placeholder { color: var(--muted); }

@@ -9,7 +9,9 @@ export type IconName =
     | "close"
     | "arrow-left"
     | "arrow-right"
-    | "orders";
+    | "orders"
+    | "sun"
+    | "moon";
 
 export interface IconProps extends React.SVGAttributes<SVGSVGElement> {
     name: IconName;
@@ -88,6 +90,26 @@ export default function Icon({
                         <path d="M10 7V6a2 2 0 0 1 4 0v1" />
                         <path d="M9 12h6" />
                         <path d="M9 16h6" />
+                    </>
+                );
+            case "sun":
+                return (
+                    <>
+                        <circle cx="12" cy="12" r="4" />
+                        <path d="M12 2v2" />
+                        <path d="M12 20v2" />
+                        <path d="M2 12h2" />
+                        <path d="M20 12h2" />
+                        <path d="M4.93 4.93l1.41 1.41" />
+                        <path d="M17.66 17.66l1.41 1.41" />
+                        <path d="M4.93 19.07l1.41-1.41" />
+                        <path d="M17.66 6.34l1.41-1.41" />
+                    </>
+                );
+            case "moon":
+                return (
+                    <>
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
                     </>
                 );
             default:
