@@ -4,8 +4,17 @@
 
 [build.environment]
   NODE_VERSION = "18"
+  # Можно не задавать, если используете прокси:
+  # VITE_API_URL = "https://mira-api-p01t.onrender.com"
 
-# SPA-роутинг (все пути на index.html)
+# 1) Прокси всех API-запросов на Render
+[[redirects]]
+  from = "/api/*"
+  to = "https://mira-api-p01t.onrender.com/:splat"
+  status = 200
+  force = true
+
+# 2) SPA-фоллбек — ДОЛЖЕН быть последним
 [[redirects]]
   from = "/*"
   to = "/index.html"

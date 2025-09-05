@@ -88,6 +88,7 @@ export const clearToken = () => localStorage.removeItem(TOKEN_KEY);
 
 /* ========================= Types ========================== */
 import type { User, Address } from "@/types";
+import { PickupLocation } from "@/types/location";
 
 /* ===================== Base request ======================= */
 async function req<T>(path: string, init: RequestInit = {}) {
@@ -346,6 +347,15 @@ export const api = {
   },
 
   reviews,
+
+  locations: {
+    async search(zip: string, city?: string, type: "packstation"|"postfiliale"|"parcelshop" = "packstation", radius = 5, results = 10): Promise<PickupLocation[]> {
+      const qs = `?zip=${encodeURIComponent(zip)}${city ? `&city=${encodeURIComponent(city)}` : ""}&type=${type}&radius=${radius}&results=${results}`;
+      const res = await req<any>(`/locations${qs}`);
+      const arr = res?.items ?? res ?? [];
+      return arr as PickupLocation[];
+    }
+  },
 
   addresses: {
     list: async (): Promise<Address[]> => {
