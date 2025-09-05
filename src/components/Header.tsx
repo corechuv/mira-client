@@ -26,7 +26,7 @@ export default function Header() {
           </Link>
 
           <nav className={styles.nav} aria-label="Навигация">
-            <LanguageSwitcher />
+            <div className={styles.hideMobile}><LanguageSwitcher variant="desktop" /></div>
             <button
               className={styles.btnIcon}
               onClick={() => setSearchOpen(true)}

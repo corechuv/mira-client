@@ -75,3 +75,12 @@
 @media (max-width: 640px) {
   .logoText { display: none; }
 }
+
+
+.hideMobile { display: block; }
+.hideODesktop { display: none; }
+
+@media (max-width: 768px) {
+  .hideMobile { display: none; }
+  .hideODesktop { display: block; }
+}

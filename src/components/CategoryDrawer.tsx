@@ -6,6 +6,7 @@ import { navigate } from "@/router/Router";
 import { useProducts } from "@/contexts/ProductsContext";
 import Icon from "./Icon";
 import ThemeToggle from "./ThemeToggle";
+import LanguageSwitcher from "./LanguageSwitcher";
 
 type Props = { onClose: () => void };
 
@@ -95,6 +96,8 @@ export default function CategoryDrawer({ onClose }: Props) {
             </div>
             {/* переключатель темы */}
             <ThemeToggle />
+
+            <LanguageSwitcher variant="mobile" />
         </div>
     );
 }

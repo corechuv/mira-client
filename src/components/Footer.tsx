@@ -78,7 +78,7 @@ export default function Footer() {
           </div>
 
           <div className={styles.iconGroup} aria-label="Оплата">
-            <span className={styles.groupTitle}>Оплата</span>
+            <span className={styles.groupTitle}>{t("footer.payments", "Оплата")}</span>
             <ul className={styles.icons}>
               {payments.map((i) => (
                 <li key={i.alt} className={styles.iconItem}>

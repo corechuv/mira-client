@@ -38,6 +38,8 @@ const bundle: Bundle = {
         "home.popular": "Популярное",
         "home.recommended": "Рекомендуем",
 
+        "footer.shipping": "Доставка",
+        "footer.payments": "Оплата",
         "footer.privacy": "Политика конфиденциальности",
         "footer.terms": "Условия использования",
         "footer.cookies": "Политика использования cookies",
@@ -337,7 +339,25 @@ const bundle: Bundle = {
         "filters.rating.all": "Все",
         "filters.sort.title": "Сортировка",
         "filters.actions.reset": "Сбросить фильтры",
-        "filters.actions.apply": "Применить"
+        "filters.actions.apply": "Применить",
+
+        "cookie.title": "Мы используем cookie",
+        "cookie.desc": "Необходимые cookie обеспечивают базовые функции сайта и всегда включены. Вы можете настроить использование аналитических и маркетинговых cookie.",
+        "cookie.policyLink": "Подробнее в политике cookie",
+        "cookie.group.necessary": "Необходимые",
+        "cookie.group.necessaryNote": "Нельзя отключить",
+        "cookie.group.analytics": "Аналитика",
+        "cookie.group.analyticsNote": "Помогают улучшать продукт",
+        "cookie.group.marketing": "Маркетинг",
+        "cookie.group.marketingNote": "Персонализированные предложения",
+        "cookie.actions.acceptAll": "Принять все",
+        "cookie.actions.save": "Сохранить выбор",
+        "cookie.actions.decline": "Отклонить",
+        "cookie.aria.dialog": "Настройки cookie",
+        "cookie.aria.necessary": "Необходимые cookie",
+        "cookie.aria.analytics": "Аналитические cookie",
+        "cookie.aria.marketing": "Маркетинговые cookie"
+
 
 
     },
@@ -371,6 +391,8 @@ const bundle: Bundle = {
         "home.popular": "Популярне",
         "home.recommended": "Рекомендуємо",
 
+        "footer.shipping": "Доставка",
+        "footer.payments": "Оплата",
         "footer.privacy": "Політика конфіденційності",
         "footer.terms": "Умови використання",
         "footer.cookies": "Політика cookie",
@@ -667,8 +689,24 @@ const bundle: Bundle = {
         "filters.rating.all": "Усі",
         "filters.sort.title": "Сортування",
         "filters.actions.reset": "Скинути фільтри",
-        "filters.actions.apply": "Застосувати"
+        "filters.actions.apply": "Застосувати",
 
+        "cookie.title": "Ми використовуємо cookie",
+        "cookie.desc": "Необхідні cookie забезпечують базові функції сайту і завжди увімкнені. Ви можете налаштувати використання аналітичних та маркетингових cookie.",
+        "cookie.policyLink": "Докладніше у політиці cookie",
+        "cookie.group.necessary": "Необхідні",
+        "cookie.group.necessaryNote": "Не можна вимкнути",
+        "cookie.group.analytics": "Аналітика",
+        "cookie.group.analyticsNote": "Допомагають покращувати продукт",
+        "cookie.group.marketing": "Маркетинг",
+        "cookie.group.marketingNote": "Персоналізовані пропозиції",
+        "cookie.actions.acceptAll": "Прийняти всі",
+        "cookie.actions.save": "Зберегти вибір",
+        "cookie.actions.decline": "Відхилити",
+        "cookie.aria.dialog": "Налаштування cookie",
+        "cookie.aria.necessary": "Необхідні cookie",
+        "cookie.aria.analytics": "Аналітичні cookie",
+        "cookie.aria.marketing": "Маркетингові cookie"
 
 
     },
@@ -702,6 +740,9 @@ const bundle: Bundle = {
         "home.popular": "Popular",
         "home.recommended": "Recommended",
 
+
+        "footer.shipping": "Shipping",
+        "footer.payments": "Payments",
         "footer.privacy": "Privacy Policy",
         "footer.terms": "Terms of Use",
         "footer.cookies": "Cookie Policy",
@@ -998,7 +1039,25 @@ const bundle: Bundle = {
         "filters.rating.all": "All",
         "filters.sort.title": "Sort",
         "filters.actions.reset": "Reset filters",
-        "filters.actions.apply": "Apply"
+        "filters.actions.apply": "Apply",
+
+        "cookie.title": "We use cookies",
+        "cookie.desc": "Essential cookies enable core site functionality and are always on. You can manage analytics and marketing cookies.",
+        "cookie.policyLink": "Learn more in our cookie policy",
+        "cookie.group.necessary": "Essential",
+        "cookie.group.necessaryNote": "Can't be turned off",
+        "cookie.group.analytics": "Analytics",
+        "cookie.group.analyticsNote": "Help us improve the product",
+        "cookie.group.marketing": "Marketing",
+        "cookie.group.marketingNote": "Personalized offers",
+        "cookie.actions.acceptAll": "Accept all",
+        "cookie.actions.save": "Save selection",
+        "cookie.actions.decline": "Decline",
+        "cookie.aria.dialog": "Cookie settings",
+        "cookie.aria.necessary": "Essential cookies",
+        "cookie.aria.analytics": "Analytics cookies",
+        "cookie.aria.marketing": "Marketing cookies"
+
 
     },
     de: {
@@ -1031,6 +1090,9 @@ const bundle: Bundle = {
         "home.popular": "Beliebt",
         "home.recommended": "Empfohlen",
 
+
+        "footer.shipping": "Versand",
+        "footer.payments": "Zahlungen",
         "footer.privacy": "Datenschutzerklärung",
         "footer.terms": "Nutzungsbedingungen",
         "footer.cookies": "Cookie-Richtlinie",
@@ -1326,8 +1388,24 @@ const bundle: Bundle = {
         "filters.rating.all": "Alle",
         "filters.sort.title": "Sortierung",
         "filters.actions.reset": "Filter zurücksetzen",
-        "filters.actions.apply": "Anwenden"
+        "filters.actions.apply": "Anwenden",
 
+        "cookie.title": "Wir verwenden Cookies",
+        "cookie.desc": "Notwendige Cookies ermöglichen grundlegende Funktionen der Website und sind immer aktiviert. Sie können Analyse- und Marketing-Cookies verwalten.",
+        "cookie.policyLink": "Mehr in der Cookie-Richtlinie",
+        "cookie.group.necessary": "Notwendig",
+        "cookie.group.necessaryNote": "Kann nicht deaktiviert werden",
+        "cookie.group.analytics": "Analyse",
+        "cookie.group.analyticsNote": "Helfen uns, das Produkt zu verbessern",
+        "cookie.group.marketing": "Marketing",
+        "cookie.group.marketingNote": "Personalisierte Angebote",
+        "cookie.actions.acceptAll": "Alle akzeptieren",
+        "cookie.actions.save": "Auswahl speichern",
+        "cookie.actions.decline": "Ablehnen",
+        "cookie.aria.dialog": "Cookie-Einstellungen",
+        "cookie.aria.necessary": "Notwendige Cookies",
+        "cookie.aria.analytics": "Analyse-Cookies",
+        "cookie.aria.marketing": "Marketing-Cookies"
 
 
     },
