@@ -19,7 +19,7 @@ export default function Home() {
         <div className={`${styles.heroCard}`}>
           <div className={styles.heroGrid}>
             <div className={styles.heroContent}>
-              <h1 className={styles.title}>Title</h1>
+              <h1 className={styles.title}>Sample</h1>
               <p className={styles.subtitle}>
                 Description
               </p>
