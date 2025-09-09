@@ -25,7 +25,7 @@
 /* адаптивная ширина карточек — реально сжимается на телефонах */
 .item {
   scroll-snap-align: start;
-  flex: 0 0 clamp(160px, 70vw, 260px);
+  flex: 0 0 clamp(120px, 30vw, 260px);
 }
 @media (min-width: 600px) {
   .item { flex-basis: clamp(180px, 40vw, 260px); }
@@ -33,13 +33,6 @@
 @media (min-width: 900px) {
   .item { flex-basis: clamp(200px, 24vw, 280px); }
 }
-
-.gradientLeft, .gradientRight {
-  position: absolute; top: 0; bottom: 0; width: 0px; pointer-events: none;
-  z-index: 1;
-}
-.gradientLeft { left: 0; background: linear-gradient(90deg, var(--bg), transparent); }
-.gradientRight { right: 0; background: linear-gradient(270deg, var(--bg), transparent); }
 
 .btnIcon {
   display: inline-flex; justify-content: center; align-items: center;

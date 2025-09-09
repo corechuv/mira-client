@@ -85,8 +85,6 @@ export default function ProductsRail({ title, items, excludeId, showControls = t
       )}
 
       <div className={styles.viewport}>
-        <div className={styles.gradientLeft} aria-hidden />
-        <div className={styles.gradientRight} aria-hidden />
 
         <div ref={ref} className={styles.track}>
           {list.map((p) => (
