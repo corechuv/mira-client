@@ -40,7 +40,7 @@ export default function CategoryDrawer({ onClose }: Props) {
             <div className={styles.toolbar}>
                 {level > 0 ? (
                     <div className={styles.btnIcon} onClick={back}>
-                        <Icon name="arrow-left" width={20} />
+                        <Icon name="arrow-left" width={20} strokeWidth={2} />
                     </div>
                 ) : (
                     <div className={styles.btnIcon} onClick={back}>
@@ -61,7 +61,7 @@ export default function CategoryDrawer({ onClose }: Props) {
                                     <span>{n.title}</span>
                                     {n.children &&
                                         <span className={styles.chev}>
-                                            <Icon name="arrow-right" width={16} />
+                                            <Icon name="arrow-right" width={16} strokeWidth={2} />
                                         </span>
                                     }
                                 </button>
@@ -78,7 +78,7 @@ export default function CategoryDrawer({ onClose }: Props) {
                                         <span>{n.title}</span>
                                         {n.children &&
                                             <span className={styles.chev}>
-                                                <Icon name="arrow-right" width={16} />
+                                                <Icon name="arrow-right" width={16} strokeWidth={2} />
                                             </span>
                                         }
                                     </button>
