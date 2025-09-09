@@ -13,8 +13,10 @@ type IconItem = {
 };
 
 const payments: IconItem[] = [
-  { src: "/icons/visa.svg", alt: "Visa", h: 18 },
-  { src: "/icons/mastercard.svg", alt: "Mastercard", h: 34 },
+  { src: "/icons/visa.svg", alt: "Visa", h: 16 },
+  { src: "/icons/mastercard.svg", alt: "Mastercard", h: 30 },
+  { src: "/icons/amazonpay-secondary-logo-rgb_clr.png", alt: "Amazon Pay", h: 24 },
+  { src: "/icons/klarna_badge.svg", alt: "Klarna", h: 24 },
 ];
 
 const shipping: IconItem[] = [
@@ -55,8 +57,29 @@ export default function Footer() {
         </div>
 
         <div className={styles.iconSection}>
+
+          <div className={styles.iconGroup} aria-label="Оплата">
+            <h3 className={styles.groupTitle}>{t("footer.payments", "Оплата")}</h3>
+            <ul className={styles.icons}>
+              {payments.map((i) => (
+                <li key={i.alt} className={styles.iconItem}>
+                  <img
+                    src={i.src}
+                    alt={i.alt}
+                    onError={onImgError}
+                    style={
+                      {
+                        ["--h" as any]: toPx(i.h),
+                        ["--h-sm" as any]: toPx(i.hSm),
+                      } as React.CSSProperties
+                    }
+                  />
+                </li>
+              ))}
+            </ul>
+          </div>
           <div className={styles.iconGroup} aria-label="Доставка">
-            <span className={styles.groupTitle}>{t("footer.shipping", "Доставка")}</span>
+            <h3 className={styles.groupTitle}>{t("footer.shipping", "Доставка")}</h3>
             <ul className={styles.icons}>
               {shipping.map((i) => (
                 <li key={i.alt} className={styles.iconItem}>
@@ -67,27 +90,6 @@ export default function Footer() {
                     style={
                       {
                         // кастомные высоты через CSS-переменные
-                        ["--h" as any]: toPx(i.h),
-                        ["--h-sm" as any]: toPx(i.hSm),
-                      } as React.CSSProperties
-                    }
-                  />
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className={styles.iconGroup} aria-label="Оплата">
-            <span className={styles.groupTitle}>{t("footer.payments", "Оплата")}</span>
-            <ul className={styles.icons}>
-              {payments.map((i) => (
-                <li key={i.alt} className={styles.iconItem}>
-                  <img
-                    src={i.src}
-                    alt={i.alt}
-                    onError={onImgError}
-                    style={
-                      {
                         ["--h" as any]: toPx(i.h),
                         ["--h-sm" as any]: toPx(i.hSm),
                       } as React.CSSProperties
