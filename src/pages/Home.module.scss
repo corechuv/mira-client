@@ -9,7 +9,7 @@
   position: relative;
   overflow: hidden;
   border-radius: 18px;
-  border: 1px solid var(--border-weak);
+  background: linear-gradient(45deg, rgb(255, 239, 250), rgba(215, 242, 255, 0.138));
 }
 
 .badge {
