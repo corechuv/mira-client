@@ -8,7 +8,7 @@
 .backdrop {
   position: absolute;
   inset: 0;
-  background: var(--bg-search-backdrop);
+  background: var(--bg);
   backdrop-filter: blur(20px);
   opacity: 0;
   animation: fadeIn .18s ease forwards;
@@ -91,6 +91,7 @@
   top: .8rem;
   right: .8rem;
   z-index: 2;
+  cursor: pointer;
 }
 
 /* РЕЗУЛЬТАТЫ: прокручиваются, высота = экран - hero */

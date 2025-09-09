@@ -5,7 +5,7 @@
   display: flex; align-items: center; justify-content: space-between;
   gap: .6rem; margin-bottom: 2rem;
 
-  h3 { margin: 0; font-weight: 600; font-size: 2rem; }
+  h3 { margin: 0; font-weight: 700; font-size: 1.6rem; }
 }
 .controls { display: flex; gap: .4rem; }
 
@@ -50,4 +50,8 @@
   border: none;
   transition: background .15s ease;
   border-radius: 0;
+
+  svg {
+    stroke-width: 2;
+  }
 }
