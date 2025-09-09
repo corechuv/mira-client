@@ -19,15 +19,14 @@ export default function Home() {
         <div className={`${styles.heroCard}`}>
           <div className={styles.heroGrid}>
             <div className={styles.heroContent}>
-              <span className={styles.badge}>новинки</span>
-              <h1 className={styles.title}>Шото написать...</h1>
+              <h1 className={styles.title}>Title</h1>
               <p className={styles.subtitle}>
-                Шо то дописать...
+                Description
               </p>
               <div className={styles.actions}>
                 <Link to="/catalog" className="btn btnPrimary">{t("home.toCatalog", "В каталог")}</Link>
               </div>
-              <div style={{padding: "4px 0"}}></div>
+              <div style={{ padding: "4px 0" }}></div>
               <div className={styles.actions}>
                 <Link to="/profile?tab=orders" className="btn btnGhost">{t("home.myOrders", "Мои заказы")}</Link>
               </div>
