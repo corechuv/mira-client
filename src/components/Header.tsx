@@ -11,6 +11,7 @@ import SearchOverlay from "./SearchOverlay";
 import LogoMark from "./Logo/LogoMark";
 
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import FullLogo from "./Logo/FullLogo";
 
 export default function Header() {
   const { totalQty } = useCart();
@@ -22,7 +23,7 @@ export default function Header() {
       <div className="container">
         <div className={styles.bar}>
           <Link to="/" className={styles.logo} aria-label="На главную">
-            <LogoMark className={styles.logoMark} title="Mira Logo" />
+            <FullLogo />
           </Link>
 
           <nav className={styles.nav} aria-label="Навигация">
