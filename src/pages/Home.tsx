@@ -37,14 +37,10 @@ export default function Home() {
 
 
       <section className={styles.section}>
-        <div className={styles.sectionHead}>
-        </div>
         <ProductsRail title={t("home.popular", "Популярное")} items={top} />
       </section>
 
       <section className={styles.section}>
-        <div className={styles.sectionHead}>
-        </div>
         <ProductsRail title={t("home.recommended", "Рекомендуем")} items={allProducts} />
       </section>
     </div>
