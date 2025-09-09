@@ -43,8 +43,7 @@ export default function CategoryDrawer({ onClose }: Props) {
                         <Icon name="arrow-left" width={20} strokeWidth={2} />
                     </div>
                 ) : (
-                    <div className={styles.btnIcon} onClick={back}>
-                    </div>
+                    <div style={{ marginLeft: "10px" }}></div>
                 )}
                 <div className={styles.breadcrumbs}>
                     {level === 0 ? "Категории" : trail.map((n) => n.title).join(" / ")}
