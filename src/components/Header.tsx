@@ -64,7 +64,7 @@ export default function Header() {
       <Modal
         isOpen={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        title="Категории"
+        title=""
         width={320}
         side="right"
       >
