@@ -59,7 +59,11 @@ export default function CategoryDrawer({ onClose }: Props) {
                             <li key={n.slug}>
                                 <button className={styles.item} onClick={() => go(n)}>
                                     <span>{n.title}</span>
-                                    {n.children && <span className={styles.chev}>›</span>}
+                                    {n.children &&
+                                        <span className={styles.chev}>
+                                            <Icon name="arrow-right" width={16} />
+                                        </span>
+                                    }
                                 </button>
                             </li>
                         ))}
@@ -72,7 +76,11 @@ export default function CategoryDrawer({ onClose }: Props) {
                                 <li key={n.slug}>
                                     <button className={styles.item} onClick={() => go(n)}>
                                         <span>{n.title}</span>
-                                        {n.children && <span className={styles.chev}>›</span>}
+                                        {n.children &&
+                                            <span className={styles.chev}>
+                                                <Icon name="arrow-right" width={16} />
+                                            </span>
+                                        }
                                     </button>
                                 </li>
                             ))}
