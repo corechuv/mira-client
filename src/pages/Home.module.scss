@@ -43,14 +43,4 @@
   .hero {
     padding: 1.2rem 0;
   }
-  .heroCard {
-    padding: 0;
-    background: transparent;
-    border: none;
-    border-radius: 0;
-  }
-  .heroCard::after {
-    display: none;
-  }
-  
 }
