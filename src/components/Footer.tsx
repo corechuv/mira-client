@@ -148,7 +148,7 @@ export default function Footer() {
         </div>
 
         <div className={styles.iconGroup} style={{ display: "flex", marginTop: 30, marginLeft: "-18px", justifyContent: "start" }} aria-label="Соцсети">
-          <ul className={styles.icons}>
+          <ul className={`${styles.icons} ${styles.socials}`}>
             {socials.map((i) => (
               <li key={i.alt} className={styles.iconItem}>
                 <a
