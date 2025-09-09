@@ -8,6 +8,7 @@ import styles from "./Catalog.module.scss";
 import FiltersPanel from "@/components/FiltersPanel";
 import Modal from "@/components/Modal";
 import { useI18n } from "@/i18n/I18nContext";
+import EmptyResults from "@/components/EmptyResults";
 
 export default function Catalog() {
   const { t } = useI18n();
@@ -77,9 +78,11 @@ export default function Catalog() {
               </div>
             ))}
             {products.length === 0 && (
-              <div className="card" style={{ padding: "1rem" }}>
-                {t("catalog.empty", "Ничего не найдено. Попробуйте изменить фильтры.")}
-              </div>
+              <EmptyResults
+                delayMs={700}
+                loadingLabel={t("catalog.searching", "Ищем товары…")}
+                message={t("catalog.empty", "Ничего не найдено. Попробуйте изменить фильтры.")}
+              />
             )}
           </div>
         </main>

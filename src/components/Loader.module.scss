@@ -1,0 +1,9 @@
+.wrap { display: inline-flex; align-items: center; gap: .6rem; color: var(--muted); }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner { animation: spin .9s linear infinite; }
+
+.track { stroke: rgba(255,255,255,.12); } /* под тёмные темы ок; при светлой теме — подхватит currentColor */
+.indicator { stroke: currentColor; stroke-dasharray: 110; stroke-dashoffset: 80; }
+
+.label { font-size: .95rem; }

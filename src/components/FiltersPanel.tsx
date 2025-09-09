@@ -13,17 +13,21 @@ type Props = {
 /* ===== Dual range ===== */
 function DualRange({
   min, max, from, to, onFrom, onTo, ariaFrom, ariaTo,
+  step = 1,
+  minDistance = 0, // минимальный зазор между ручками (по умолчанию 0)
 }: {
   min: number; max: number; from: number; to: number;
   onFrom: (n: number) => void; onTo: (n: number) => void;
   ariaFrom: string; ariaTo: string;
+  step?: number;
+  minDistance?: number;
 }) {
   const [active, setActive] = useState<"from" | "to" | null>(null);
 
   const span = Math.max(1, max - min);
   const pct = (n: number) => ((n - min) / span) * 100;
-  const pFrom = pct(from);
-  const pTo = pct(to);
+  const pFrom = pct(Math.min(from, to));
+  const pTo = pct(Math.max(from, to));
 
   const bg = `linear-gradient(to right,
     rgba(255,255,255,.18) 0%,
@@ -38,21 +42,95 @@ function DualRange({
     return Number.isFinite(n) ? n : 0;
   };
 
+  const clamp = (n: number) => Math.min(max, Math.max(min, n));
+  const safeFrom = (n: number) => Math.min(clamp(n), to - minDistance);
+  const safeTo   = (n: number) => Math.max(clamp(n), from + minDistance);
+
+  const handleFromInput = (v: string) => onFrom(safeFrom(toNum(v)));
+  const handleToInput   = (v: string) => onTo(safeTo(toNum(v)));
+
+  const onKeyFrom = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const big = step * 10;
+    switch (e.key) {
+      case "ArrowLeft":
+      case "ArrowDown":
+        e.preventDefault();
+        onFrom(safeFrom(from - step));
+        break;
+      case "ArrowRight":
+      case "ArrowUp":
+        e.preventDefault();
+        onFrom(safeFrom(from + step));
+        break;
+      case "PageDown":
+        e.preventDefault();
+        onFrom(safeFrom(from - big));
+        break;
+      case "PageUp":
+        e.preventDefault();
+        onFrom(safeFrom(from + big));
+        break;
+      case "Home":
+        e.preventDefault();
+        onFrom(safeFrom(min));
+        break;
+      case "End":
+        e.preventDefault();
+        onFrom(safeFrom(to));
+        break;
+    }
+  };
+
+  const onKeyTo = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const big = step * 10;
+    switch (e.key) {
+      case "ArrowLeft":
+      case "ArrowDown":
+        e.preventDefault();
+        onTo(safeTo(to - step));
+        break;
+      case "ArrowRight":
+      case "ArrowUp":
+        e.preventDefault();
+        onTo(safeTo(to + step));
+        break;
+      case "PageDown":
+        e.preventDefault();
+        onTo(safeTo(to - big));
+        break;
+      case "PageUp":
+        e.preventDefault();
+        onTo(safeTo(to + big));
+        break;
+      case "Home":
+        e.preventDefault();
+        onTo(safeTo(from));
+        break;
+      case "End":
+        e.preventDefault();
+        onTo(safeTo(max));
+        break;
+    }
+  };
+
   return (
     <div className={styles.rangeWrap} style={{ background: bg }}>
       {/* левая ручка */}
       <input
         aria-label={ariaFrom}
+        aria-valuemin={min}
+        aria-valuemax={to}
+        aria-valuenow={from}
+        aria-valuetext={`${from}`}
         type="range"
         min={min}
         max={max}
-        step={1}
+        step={step}
         value={from}
-        onChange={(e) => onFrom(Math.min(toNum(e.target.value), to))}
-        onMouseDown={() => setActive("from")}
-        onTouchStart={() => setActive("from")}
-        onMouseUp={() => setActive(null)}
-        onTouchEnd={() => setActive(null)}
+        onChange={(e) => handleFromInput(e.target.value)}
+        onPointerDown={(e) => { (e.target as HTMLInputElement).focus(); setActive("from"); }}
+        onPointerUp={() => setActive(null)}
+        onKeyDown={onKeyFrom}
         className={styles.range}
         style={{ zIndex: active === "from" ? 2 : 1 }}
       />
@@ -60,16 +138,19 @@ function DualRange({
       {/* правая ручка */}
       <input
         aria-label={ariaTo}
+        aria-valuemin={from}
+        aria-valuemax={max}
+        aria-valuenow={to}
+        aria-valuetext={`${to}`}
         type="range"
         min={min}
         max={max}
-        step={1}
+        step={step}
         value={to}
-        onChange={(e) => onTo(Math.max(toNum(e.target.value), from))}
-        onMouseDown={() => setActive("to")}
-        onTouchStart={() => setActive("to")}
-        onMouseUp={() => setActive(null)}
-        onTouchEnd={() => setActive(null)}
+        onChange={(e) => handleToInput(e.target.value)}
+        onPointerDown={(e) => { (e.target as HTMLInputElement).focus(); setActive("to"); }}
+        onPointerUp={() => setActive(null)}
+        onKeyDown={onKeyTo}
         className={styles.range}
         style={{ zIndex: active === "to" ? 2 : 1 }}
       />
@@ -116,9 +197,9 @@ export default function FiltersPanel({ onApply, inModal }: Props) {
   const [from, setFrom] = useState<number>(priceFrom);
   const [to, setTo] = useState<number>(priceTo);
   const clampFrom = (n: number) => Math.max(priceBounds.min, Math.min(n, to));
-  const clampTo   = (n: number) => Math.min(priceBounds.max, Math.max(n, from));
+  const clampTo = (n: number) => Math.min(priceBounds.max, Math.max(n, from));
   const changeFrom = (n: number) => { const v = clampFrom(n); setFrom(v); setPriceFrom(v); };
-  const changeTo   = (n: number)   => { const v = clampTo(n);   setTo(v); setPriceTo(v); };
+  const changeTo = (n: number) => { const v = clampTo(n); setTo(v); setPriceTo(v); };
 
   const applyAndClose = () => { onApply?.(); };
   const resetAll = () => {
