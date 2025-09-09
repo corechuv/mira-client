@@ -12,6 +12,7 @@ import DeliveryInfo from "@/components/DeliveryInfo";
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
 import { useI18n } from "@/i18n/I18nContext";
+import ImagePlaceholder from "@/components/ImagePlaceholder";
 
 export default function Product() {
   const { params } = useRoute();
@@ -71,7 +72,7 @@ export default function Product() {
           <div className={styles.gallery}>
             <div className={styles.photo}>
               {product.imageUrl ? <img src={product.imageUrl} alt={product.title} /> :
-                <img src="/placeholder/placeholder.svg" alt={product.title} />
+                <ImagePlaceholder />
               }
             </div>
             <div className={styles.thumbs}>

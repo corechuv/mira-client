@@ -5,6 +5,7 @@ import type { Product } from "@/types";
 import { fmtEUR } from "@/utils/money";
 import { Link } from "react-router-dom";
 import { useI18n } from "@/i18n/I18nContext";
+import ImagePlaceholder from "./ImagePlaceholder";
 
 
 export default function ProductCard({ product }: { product: Product }) {
@@ -15,7 +16,7 @@ export default function ProductCard({ product }: { product: Product }) {
       <Link to={`/product/${product.slug}`} className={styles.thumb} aria-label={product.title}>
         <div className={styles.img} role="img" aria-label={product.title}>
           {product.imageUrl ? <img src={product.imageUrl} alt={product.title} /> :
-            <img src="/placeholder/placeholder.svg" alt={product.title} />
+            <ImagePlaceholder />
           }
         </div>
       </Link>
