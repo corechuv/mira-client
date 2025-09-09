@@ -21,6 +21,8 @@
   --footer-link-text: gray;
 
 
+  --bg-input: #242424;
+
   --bg: #0a0a0a;
   --surface: #111114;
   --surface-2: #16161a;
@@ -51,6 +53,8 @@
   --bg-footer: #f9f9f9;
   --footer-link-text: rgb(0, 0, 0);
 
+
+  --bg-input: #efefef;
 
   --bg: #ffffff;
   --surface: #ffffff;
@@ -212,7 +216,7 @@ button {
   padding: 0 0.6rem;
   border-radius: 12px;
   font-size: 16px;
-  background: var(--surface-2);
+  background: var(--bg-input);
   border: 1px solid transparent;
   color: var(--text);
   outline: none;
