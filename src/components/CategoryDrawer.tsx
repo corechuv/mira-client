@@ -94,10 +94,11 @@ export default function CategoryDrawer({ onClose }: Props) {
 
                 </div>
             </div>
-            {/* переключатель темы */}
-            <ThemeToggle />
 
-            <LanguageSwitcher variant="mobile" />
+            <div className={styles.spacer}>
+                <ThemeToggle />
+                <LanguageSwitcher variant="mobile" />
+            </div>
         </div>
     );
 }

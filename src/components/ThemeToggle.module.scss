@@ -4,16 +4,19 @@
   justify-content: center;
   align-items: center;
   gap: .45rem;
-  padding: .45rem .7rem;
-  border-radius: 8px;
-  border: 1px solid var(--border-weak, rgba(17, 17, 20, 0.08));
-  background: var(--surface);
+  border: none;
+  background: transparent;
   color: var(--text);
   cursor: pointer;
   max-width: 120px;
 
   span {
     display: flex;
+    width: 1.2rem;
   }
 }
-.label { font-size: .9rem; color: var(--muted); }
+
+.label {
+  font-size: .9rem;
+  font-weight: 500;
+}
