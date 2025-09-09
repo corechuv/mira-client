@@ -15,7 +15,7 @@ export default function ThemeToggle() {
       title={isLight ? "Dark" : "Light"}
     >
       <span className={styles.icon} aria-hidden>
-        {isLight ? <Icon name="moon" /> : <Icon name="sun" />}
+        {isLight ? <Icon name="moon" strokeWidth={1.5} /> : <Icon name="sun" strokeWidth={1.5} />}
       </span>
       <span className={styles.label}>{isLight ? "Dark" : "Light"}</span>
     </button>
