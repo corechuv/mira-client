@@ -25,7 +25,7 @@
 /* адаптивная ширина карточек — реально сжимается на телефонах */
 .item {
   scroll-snap-align: start;
-  flex: 0 0 clamp(120px, 30vw, 260px);
+  flex: 0 0 clamp(180px, 40vw, 260px);
 }
 @media (min-width: 600px) {
   .item { flex-basis: clamp(180px, 40vw, 260px); }
