@@ -70,7 +70,9 @@ export default function Product() {
         <div className={styles.left}>
           <div className={styles.gallery}>
             <div className={styles.photo}>
-              <img src={product.imageUrl} alt={product.title} />
+              {product.imageUrl ? <img src={product.imageUrl} alt={product.title} /> :
+                <img src="/placeholder/placeholder.svg" alt={product.title} />
+              }
             </div>
             <div className={styles.thumbs}>
               <div className={styles.thumb} />
