@@ -62,9 +62,7 @@ export default function Catalog() {
       <div className={styles.layout}>
         {/* Сайдбар (desktop) */}
         <aside className={styles.sidebar}>
-          <div className="card" style={{ padding: ".8rem" }}>
             <FiltersPanel />
-          </div>
         </aside>
 
         {/* Результаты */}
@@ -77,14 +75,14 @@ export default function Catalog() {
                 <ProductCard product={p} />
               </div>
             ))}
-            {products.length === 0 && (
-              <EmptyResults
-                delayMs={700}
-                loadingLabel={t("catalog.searching", "Ищем товары…")}
-                message={t("catalog.empty", "Ничего не найдено. Попробуйте изменить фильтры.")}
-              />
-            )}
           </div>
+          {products.length === 0 && (
+            <EmptyResults
+              delayMs={700}
+              loadingLabel={t("catalog.searching", "Ищем товары…")}
+              message={t("catalog.empty", "Ничего не найдено. Попробуйте изменить фильтры.")}
+            />
+          )}
         </main>
       </div>
 

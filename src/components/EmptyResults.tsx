@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Loader from "./Loader";
+import styles from "./EmptyResults.module.scss";
 
 type Props = {
   message: React.ReactNode;
@@ -23,7 +24,7 @@ export default function EmptyResults({
   }, [delayMs]);
 
   return (
-    <div className={`card ${className || ""}`} style={{ padding: "1rem" }}>
+    <div className={`${styles.text} ${className || ""}`}>
       {showMessage ? message : <Loader label={loadingLabel} />}
     </div>
   );

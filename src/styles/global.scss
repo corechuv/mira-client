@@ -49,7 +49,7 @@
   --bg: #ffffff;
   --surface: #ffffff;
   --surface-2: #f3f4f6;
-  --text: #111114;
+  --text: #0f0f0f;
   --muted: #5b5e62;
   --muted_2: #5b5e62;
   --border-weak: rgba(17, 17, 20, 0.08);
@@ -202,7 +202,7 @@ button {
 .input {
   width: 100%;
   height: 46px;
-  padding: 0 1rem;
+  padding: 0 0.6rem;
   border-radius: 12px;
   font-size: 16px;
   background: var(--surface-2);
