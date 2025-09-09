@@ -1,32 +1,40 @@
 <!doctype html>
 <html lang="ru">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="dark light" />
-    <meta name="theme-color" content="#0a0a0a" id="theme-color" />
-    <title>Shop Center-Mira</title>
-    <script>
-      (function () {
-        var KEY = "pm.theme";
-        var DARK = "#0a0a0a";
-        var LIGHT = "#ffffff";
-        try {
-          var t = localStorage.getItem(KEY);
-          if (t !== "light" && t !== "dark") {
-            t = window.matchMedia &&
-                window.matchMedia("(prefers-color-scheme: light)").matches
-                ? "light" : "dark";
-          }
-          document.documentElement.setAttribute("data-theme", t);
-          var meta = document.getElementById("theme-color");
-          if (meta) meta.setAttribute("content", t === "light" ? LIGHT : DARK);
-        } catch (e) {}
-      })();
-    </script>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="theme-color" content="#ffffff" id="theme-color" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap"
+    rel="stylesheet">
+  <title>Shop Center-Mira</title>
+  <script>
+    (function () {
+      var KEY = "pm.theme";
+      var DARK = "#0a0a0a";
+      var LIGHT = "#ffffff";
+      try {
+        var t = localStorage.getItem(KEY);
+        if (t !== "light" && t !== "dark") {
+          t = window.matchMedia &&
+            window.matchMedia("(prefers-color-scheme: light)").matches
+            ? "light" : "dark";
+        }
+        document.documentElement.setAttribute("data-theme", t);
+        var meta = document.getElementById("theme-color");
+        if (meta) meta.setAttribute("content", t === "light" ? LIGHT : DARK);
+      } catch (e) { }
+    })();
+  </script>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
 </html>
