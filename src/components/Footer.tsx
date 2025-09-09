@@ -15,10 +15,10 @@ type IconItem = {
 };
 
 const payments: IconItem[] = [
+  { src: "/icons/klarna_badge.svg", srcDark: "/icons/klarna_badge.svg", alt: "Klarna", h: 24 },
+  { src: "/icons/amazonpay-secondary-logo-rgb_clr.png", /* нет тёмной */   alt: "Amazon Pay", h: 24 },
   { src: "/icons/visa.svg", srcDark: "/icons/visa.svg", alt: "Visa", h: 16 },
   { src: "/icons/mastercard.svg", srcDark: "/icons/mastercard.svg", alt: "Mastercard", h: 30 },
-  { src: "/icons/amazonpay-secondary-logo-rgb_clr.png", /* нет тёмной */   alt: "Amazon Pay", h: 24 },
-  { src: "/icons/klarna_badge.svg", srcDark: "/icons/klarna_badge.svg", alt: "Klarna", h: 24 },
 ];
 
 const shipping: IconItem[] = [
