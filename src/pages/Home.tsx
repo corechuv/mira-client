@@ -26,7 +26,7 @@ export default function Home() {
               </p>
               <div className={styles.actions}>
                 <Link to="/catalog" className="btn btnPrimary">{t("home.toCatalog", "В каталог")}</Link>
-                <Link to="/profile?tab=orders" className="btn">{t("home.myOrders", "Мои заказы")}</Link>
+                <Link to="/profile?tab=orders" className="btn btnGhost">{t("home.myOrders", "Мои заказы")}</Link>
               </div>
             </div>
           </div>
