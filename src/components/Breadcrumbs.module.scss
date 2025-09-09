@@ -1,6 +1,6 @@
 // src/components/Breadcrumbs.module.scss
 .wrap {
-  margin: .4rem 0 .8rem;
+  margin: .4rem 0 1rem;
 }
 
 .list {
@@ -13,18 +13,17 @@
   gap: .4rem .6rem;
 }
 
-.item { display: inline-flex; align-items: center; gap: .6rem; }
+.item { display: inline-flex; align-items: center; gap: .45rem; }
 
 .link,
 .linkButton {
   display: inline-flex;
   align-items: center;
   gap: .4rem;
-  padding: .2rem .45rem;
-  border-radius: 8px;
-  border: 1px solid transparent;
+  padding: 0;
   background: transparent;
-  color: var(--muted);
+  color: var(--text);
+  font-weight: 600;
   font: inherit;
   cursor: pointer;
   text-decoration: none;
@@ -34,8 +33,7 @@
 .linkButton:hover {
   color: var(--text);
   border-color: rgba(255,255,255,0.12);
-  background: rgba(255,46,138,0.08);
 }
 
 .current { color: var(--text); font-weight: 600; }
-.sep { opacity: .6; }
+.sep { opacity: .6; display: flex; }

@@ -1,6 +1,7 @@
 // src/components/Breadcrumbs.tsx
 import { Link } from "@/router/Router";
 import styles from "./Breadcrumbs.module.scss";
+import Icon from "./Icon";
 
 export type Crumb = {
   label: string;
@@ -24,7 +25,11 @@ export default function Breadcrumbs({ items }: { items: Crumb[] }) {
               ) : (
                 <span className={styles.current}></span>
               )}
-              {!isLast && <span className={styles.sep}>›</span>}
+              {!isLast &&
+                <span className={styles.sep}>
+                  <Icon name="arrow-right" width={16} strokeWidth={1.5} />
+                </span>
+              }
             </li>
           );
         })}
