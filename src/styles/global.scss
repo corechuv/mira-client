@@ -9,13 +9,16 @@
   --error: #ff453a;
   --shadow: 0 10px 30px rgba(255, 46, 138, 0.25);
 
-  --font-family: "Lato", 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-family: "Noto Sans", 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 /* Тёмная (дефолт) */
 :root,
 :root[data-theme="dark"] {
   --logo-color: #FFEFF4;
+
+  --bg-footer: #0f0f0f;
+  --footer-link-text: gray;
 
 
   --bg: #0a0a0a;
@@ -44,6 +47,9 @@
 /* Светлая */
 :root[data-theme="light"] {
   --logo-color: #FFEFF4;
+
+  --bg-footer: #f9f9f9;
+  --footer-link-text: rgb(0, 0, 0);
 
 
   --bg: #ffffff;

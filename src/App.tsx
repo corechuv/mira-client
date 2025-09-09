@@ -49,7 +49,7 @@ const DemoAnalytics: React.FC = () => {
   // Подключаем любой ваш скрипт только при согласии
   useConditionalScript(analyticsOn, "/fake-analytics.js", "my-analytics");
   // return <div style={{ padding: 24 }}>Секция приложения. Аналитика: {analyticsOn ? "включена" : "выключена"}</div>;
-  return <div style={{ padding: 24 }}></div>;
+  return <div></div>;
 };
 
 export default function App() {

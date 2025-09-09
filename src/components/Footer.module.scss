@@ -1,7 +1,8 @@
 // src/components/Footer.module.scss
 .footer {
   border-top: 1px solid rgba(255, 255, 255, 0.06);
-  padding: 2rem 0 0;
+  padding: 2rem 0 2rem;
+  background: var(--bg-footer);
 }
 
 .grid {
@@ -183,9 +184,9 @@
       white-space: nowrap;
 
       a {
-        font-size: 14px;
+        font-size: 12px;
         font-weight: 400;
-        color: var(--text);
+        color: var(--footer-link-text);
         text-decoration: none;
       }
     }
