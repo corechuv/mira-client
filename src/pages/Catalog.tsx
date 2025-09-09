@@ -10,6 +10,8 @@ import Modal from "@/components/Modal";
 import { useI18n } from "@/i18n/I18nContext";
 import EmptyResults from "@/components/EmptyResults";
 
+// import { products } from "@/data/products"; // для подсчёта всех товаров (без фильтров)
+
 export default function Catalog() {
   const { t } = useI18n();
   const {
@@ -17,7 +19,6 @@ export default function Catalog() {
     sort, setSort,
     filterPath, setFilterPath,
   } = useProducts();
-
   const [openSheet, setOpenSheet] = useState(false);
 
   const hasPath = filterPath.length > 0;
@@ -69,9 +70,9 @@ export default function Catalog() {
         <main className={styles.main}>
 
 
-          <div className="row">
+          <div className={styles.productsGrid}>
             {products.map((p) => (
-              <div key={p.id} style={{ gridColumn: "span 4" }}>
+              <div key={p.id}>
                 <ProductCard product={p} />
               </div>
             ))}

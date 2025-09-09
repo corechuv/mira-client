@@ -16,13 +16,28 @@
 }
 
 .logo {
-  display: inline-flex;
+  display: flex;
+  justify-content: center;
   align-items: center;
-  gap: .6rem;
+  gap: 0.6rem;
   text-decoration: none;
+  width: 40px;
+  height: 40px;
+  background: #2c2c2c;
+  border-radius: 50%;
 }
-.logoMark { width: 32px; height: 32px; object-fit: cover; color: var(--logo-color); }
-.logoText { font-weight: 800; letter-spacing: .2px; }
+
+.logoMark {
+  width: 20px;
+  height: 20px;
+  object-fit: cover;
+  color: var(--logo-color);
+}
+
+.logoText {
+  font-weight: 800;
+  letter-spacing: .2px;
+}
 
 .nav {
   display: inline-flex;
@@ -49,11 +64,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.5rem; height: 2.5rem;
+  width: 2.5rem;
+  height: 2.5rem;
   cursor: pointer;
 }
 
-.cart { gap: .4rem; }
+.cart {
+  gap: .4rem;
+}
 
 .countBadge {
   position: absolute;
@@ -73,14 +91,26 @@
 
 /* адаптив */
 @media (max-width: 640px) {
-  .logoText { display: none; }
+  .logoText {
+    display: none;
+  }
 }
 
 
-.hideMobile { display: block; }
-.hideODesktop { display: none; }
+.hideMobile {
+  display: block;
+}
+
+.hideODesktop {
+  display: none;
+}
 
 @media (max-width: 768px) {
-  .hideMobile { display: none; }
-  .hideODesktop { display: block; }
+  .hideMobile {
+    display: none;
+  }
+
+  .hideODesktop {
+    display: block;
+  }
 }

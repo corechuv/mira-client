@@ -13,6 +13,7 @@
 .field>span {
   color: var(--muted);
   font-size: .9rem;
+  padding: 0 4px;
 }
 
 .group {
@@ -51,6 +52,7 @@
 .priceField>span {
   color: var(--muted);
   font-size: .85rem;
+  padding: 0 4px;
 }
 
 /* ===== RANGE (dual) ===== */
@@ -78,6 +80,7 @@
   width: 100%;
   background: transparent;
   -webkit-appearance: none;
+  border: 1px solid rgb(222, 222, 222); /* для Firefox, чтобы не прыгал при фокусе */
   appearance: none;
   margin: 0;
   touch-action: none;
@@ -147,15 +150,19 @@
 
 .chip,
 .chipActive {
-  padding: .35rem .6rem;
+  display: flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 .6rem;
   border-radius: 999px;
   border: 1px solid transparent;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(41, 41, 41, 0.04);
   color: var(--text);
+  cursor: pointer;
 }
 
 .chipActive {
-  background: rgba(255, 46, 138, 0.12);
+  background: rgba(232, 60, 134, 0.12);
   border-color: transparent;
 }
 
@@ -169,8 +176,7 @@
 /* adaptive */
 @media (max-width: 820px) {
 
-  .grid2,
-  .priceRow {
+  .grid2 {
     grid-template-columns: 1fr;
   }
 }
