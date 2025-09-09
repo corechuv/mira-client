@@ -27,9 +27,9 @@ export default function ProductCard({ product }: { product: Product }) {
         <p className={styles.desc}>{product.short}</p>
         <div className={styles.bar}>
           <div className={styles.price}>{fmtEUR(product.price)}</div>
-          <button className="btn btnPrimary" onClick={() => add(product)}>
+          {/* <button className="btn btnPrimary" onClick={() => add(product)}>
             {t("btn.addToCart", "В корзину")}
-          </button>
+          </button> */}
         </div>
       </div>
     </div>

@@ -71,15 +71,13 @@ export default function Icon({
             case "arrow-left":
                 return (
                     <>
-                        <path d="M19 12H5" />
-                        <path d="M12 5l-7 7 7 7" />
+                        <path d="M15 5 L8 12 L15 19" />
                     </>
                 );
             case "arrow-right":
                 return (
                     <>
-                        <path d="M5 12h14" />
-                        <path d="M12 5l7 7-7 7" />
+                        <path d="M9 5 L16 12 L9 19" />
                     </>
                 );
             case "orders":
