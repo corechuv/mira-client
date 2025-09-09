@@ -168,9 +168,9 @@ button {
   padding: 0.77rem 1rem;
   font-size: 1.2rem;
   border-radius: 30px;
-  border: 1px solid var(--bg-btn);
+  color: white;
+  border: 1px solid var(--surface-2);
   background: var(--bg-btn);
-  color: var(--text);
   cursor: pointer;
   transition: transform .08s ease, background .2s ease, border-color .2s ease;
 }
@@ -184,7 +184,7 @@ button {
 }
 
 .btnPrimary {
-  background: --bg-btn;
+  background: var(--bg-btn);
   color: white;
 }
 
