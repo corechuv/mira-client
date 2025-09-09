@@ -257,7 +257,7 @@ export default function FiltersPanel({ onApply, inModal }: Props) {
         {filterPath.length > 0 && (
           <div className={styles.chips}>
             <span className="badge">{filterPath.join(" / ")}</span>
-            <button type="button" className="btn" onClick={() => setFilterPath([])}>
+            <button type="button" className="btn btnGhost" onClick={() => setFilterPath([])}>
               {t("filters.categories.resetPath")}
             </button>
           </div>
@@ -354,7 +354,7 @@ export default function FiltersPanel({ onApply, inModal }: Props) {
 
       {/* Кнопки */}
       <div className={styles.actions}>
-        <button type="button" className="btn" onClick={resetAll}>
+        <button type="button" className="btn btnGhost" onClick={resetAll}>
           {t("filters.actions.reset")}
         </button>
         {inModal && (
