@@ -6,6 +6,20 @@ import ProductCard from "@/components/ProductCard";
 import ProductsRail from "@/components/ProductsRail";
 import { products as allProducts } from "@/data/products"; // для длинной ленты
 import { useI18n } from "@/i18n/I18nContext";
+import Carousel from "@/components/Carousel/Carousel";
+
+const slides = [
+  { src: "/banners/IMG_7429.JPG", alt: "Скидки до 50%" },
+  { src: "/banners/IMG_7425.JPG", alt: "Новая коллекция" },
+  { src: "/banners/IMG_7428.JPG", alt: "Новая коллекция" },
+  { src: "/banners/IMG_7421.JPG", alt: "Новая коллекция" },
+  { src: "/banners/IMG_7426.JPG", alt: "Новая коллекция" },
+  {
+    src: "/banners/IMG_7430.JPG",
+    alt: "Бесплатная доставка",
+    href: "/",
+  },
+];
 
 
 export default function Home() {
@@ -15,7 +29,7 @@ export default function Home() {
 
   return (
     <div className="container">
-      <section className={styles.hero}>
+      <section className={styles.hero} style={{display: "none"}}>
         <div className={`${styles.heroCard}`}>
           <div className={styles.heroGrid}>
             <div className={styles.heroContent}>
@@ -34,6 +48,17 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <Carousel
+        slides={slides}
+        aspectRatio="3/1"
+        autoPlay
+        interval={3500}
+        loop
+        showArrows
+        showDots
+        onIndexChange={(i) => console.log("index:", i)}
+      />
 
 
       <section className={styles.section}>

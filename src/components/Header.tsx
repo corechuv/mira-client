@@ -33,20 +33,15 @@ export default function Header() {
               onClick={() => setSearchOpen(true)}
               aria-label="Поиск"
             >
-              <Icon name="search" size="1.8rem" />
+              <Icon name="search" size="1.6rem" />
             </button>
 
             <Link to="/profile" className={styles.navItem} aria-label="Профиль">
-              <Icon name="profile" size="1.8rem" />
-            </Link>
-
-
-            <Link to="/profile?tab=orders" className={styles.navItem} aria-label="Мои заказы">
-              <Icon name="orders" size="1.8rem" />
+              <Icon name="profile" size="1.6rem" />
             </Link>
 
             <Link to="/cart" className={`${styles.navItem} ${styles.cart}`} aria-label="Корзина">
-              <Icon name="bag" size="1.8rem" />
+              <Icon name="bag" size="1.6rem" />
               {totalQty > 0 && <span className={styles.countBadge}>{totalQty}</span>}
             </Link>
 
@@ -55,7 +50,7 @@ export default function Header() {
               onClick={() => setDrawerOpen(true)}
               aria-label="Категории"
             >
-              <Icon name="menu" size="1.8rem" />
+              <Icon name="menu" size="1.6rem" />
             </button>
           </nav>
         </div>

@@ -1,0 +1,111 @@
+.carousel {
+  --pad: 8px;
+  position: relative;
+  width: 100%;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #111;
+  color: #fff;
+  user-select: none;
+}
+
+/* Соотношение сторон задаётся через inline-style aspect-ratio */
+.viewport {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.track {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  will-change: transform;
+  transition: transform 420ms cubic-bezier(.2,.8,.2,1);
+  margin: 0;
+  padding: 0;
+}
+
+/* Отключаем анимацию, пока пользователь тянет */
+.carousel:has(.track:active),
+.carousel:has(.track:focus) {
+  .track { transition: none; }
+}
+
+.slide {
+  position: relative;
+  flex: 0 0 100%;
+  height: 100%;
+  list-style-type: none;
+}
+
+.link { display: block; width: 100%; height: 100%; }
+
+.img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.overlay {
+  position: absolute;
+  inset: auto var(--pad) var(--pad) var(--pad);
+  background: rgba(0,0,0,.4);
+  backdrop-filter: blur(4px);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.arrow {
+  position: absolute;
+  top: 50%;
+  translate: 0 -50%;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.068);
+  border: none;
+  color: var(--text);
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform .2s ease, background .2s ease;
+}
+.arrow:hover { background: rgba(255,255,255,.14); }
+.arrow:active { transform: scale(.96); }
+.left { left: var(--pad); }
+.right { right: var(--pad); }
+
+.dots {
+  position: absolute;
+  left: 50%;
+  bottom: var(--pad);
+  translate: -50% 0;
+  display: flex;
+  gap: 8px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.5);
+  background: rgba(255,255,255,.2);
+  cursor: pointer;
+}
+.active { background: #fff; border-color: #fff; }
+
+/* Адаптив: на очень узких экранах делаем стрелки поменьше */
+@media (max-width: 480px) {
+  .arrow { width: 34px; height: 34px; font-size: 18px; }
+  .overlay { font-size: 13px; }
+}
+
+/* Уважение снижения анимаций */
+@media (prefers-reduced-motion: reduce) {
+  .track { transition: none; }
+}
