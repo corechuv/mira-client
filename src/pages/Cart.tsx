@@ -49,10 +49,10 @@ export default function Cart() {
             </div>
           ))}
         </div>
-        <aside className={styles.aside + " card"}>
+        <aside className={styles.aside}>
           <div className={styles.totalRow}>
             <span>{t("cart.total")}</span>
-            <b>{fmtEUR(total)}</b>
+            <b style={{fontSize: "1.4rem"}}>{fmtEUR(total)}</b>
           </div>
           <Link to="/checkout" className="btn btnPrimary btn100">
             {t("btn.checkout")}
