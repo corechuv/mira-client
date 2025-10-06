@@ -9,7 +9,7 @@
   --error: #ff453a;
   --shadow: 0 10px 30px rgba(255, 46, 138, 0.25);
 
-  --font-family: "Noto Sans", 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-family: "Roboto", -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 /* Тёмная (дефолт) */
@@ -44,6 +44,7 @@
   --bg-search: rgba(0, 0, 0, .92);
 
   --bg-btn: #191919;
+  --menu-backdrop: #23232380;
 }
 
 /* Светлая */
@@ -75,6 +76,8 @@
   --review-bar-bg: rgba(255, 46, 138, 0.08);
 
   --bg-search-backdrop: rgba(255, 255, 255, 0.866);
+
+  --menu-backdrop: rgba(208, 208, 208, 0.5019607843);
 }
 
 /* ==== БАЗОВЫЕ СТИЛИ (как были, но на переменных) ==== */
@@ -112,7 +115,7 @@ button {
 }
 
 .container {
-  max-width: 1200px;
+  max-width: 1024px;
   width: 100%;
   margin: 0 auto;
   padding: 0 1rem;

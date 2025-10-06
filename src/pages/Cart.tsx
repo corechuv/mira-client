@@ -12,36 +12,35 @@ export default function Cart() {
 
   return (
     <div className="container">
-      <h1>{t("nav.cart")}</h1>
-      <div className={`card ${styles.wrap}`}>
+      <h1 className={styles.titlePage}>{t("nav.cart")}</h1>
+      <div className={`${styles.wrap}`}>
         <div className={styles.list}>
           {items.length === 0 && <div className={styles.empty}>{t("cart.empty")}</div>}
           {items.map(i => (
             <div className={styles.row} key={i.id}>
-              <div className={styles.cellTitle}>
-                <div className={styles.thumb}>
-                  <img src={i.imageUrl} alt={i.title} />
-                </div>
-                <div>
+              <div className={styles.thumb}>
+                <img src={i.imageUrl} alt={i.title} />
+              </div>
+              <div style={{display: "flex", gap: 10, justifyContent: "space-between", width: "100%", marginRight: "42px"}}>
+                <div className={styles.cartDescriptionItem}>
                   <div className={styles.title}>{i.title}</div>
                   <Link to={`/product/${i.slug}`} className={styles.link}>
                     {t("product.open")}
                   </Link>
+                  <div
+                    className={styles.cell}
+                  >
+                    <input
+                      className={styles.qty}
+                      type="number"
+                      min={1}
+                      value={i.qty}
+                      onChange={e => setQty(i.id, Math.max(1, Number(e.target.value)))}
+                    />
+                  </div>
                 </div>
+                <div className={styles.cell}>{fmtEUR(i.price * i.qty)}</div>
               </div>
-              <div
-                className={styles.cell}
-                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem" }}
-              >
-                <input
-                  className={styles.qty}
-                  type="number"
-                  min={1}
-                  value={i.qty}
-                  onChange={e => setQty(i.id, Math.max(1, Number(e.target.value)))}
-                />
-              </div>
-              <div className={styles.cell}>{fmtEUR(i.price * i.qty)}</div>
               <div className={styles.cell}>
                 <div className={styles.btnIcon} onClick={() => remove(i.id)} role="button" aria-label="remove">
                   <Icon name="close" width={20} />
