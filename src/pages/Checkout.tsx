@@ -501,7 +501,7 @@ export default function Checkout() {
           <button className="btn btnPrimary" type="submit">{t("checkout.submit")}</button>
         </form>
 
-        <aside className={"card " + styles.aside}>
+        <aside className={styles.aside}>
           <div className={styles.totalRow}><span>{t("checkout.itemsCount")}</span><b>{items.length}</b></div>
           <div className={styles.totalRow}><span>{t("checkout.subtotal")}</span><b>{fmtEUR(subtotal)}</b></div>
           <div className={styles.totalRow}>

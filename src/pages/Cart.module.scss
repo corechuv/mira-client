@@ -111,7 +111,8 @@
 
 @media (max-width: 1000px) {
   .aside {
-    padding: 1rem 0;
+    padding: 0;
+    background: transparent;
   }
 
   .wrap {
@@ -124,6 +125,10 @@
   .row {
     grid-template-columns: 1fr auto;
     padding-right: 50px;
+  }
+
+  .aside {
+    background: transparent;
   }
 
   .cell {

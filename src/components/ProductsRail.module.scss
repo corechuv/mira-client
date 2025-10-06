@@ -1,15 +1,30 @@
 // src/components/ProductsRail.module.scss
-.wrap { margin: 1rem 0 2rem; }
+.wrap {
+  margin: 1rem 0 2rem;
+}
 
 .head {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: .6rem; margin-bottom: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .6rem;
+  margin-bottom: 2rem;
 
-  h3 { margin: 0; font-weight: 700; font-size: 1.6rem; }
+  h3 {
+    margin: 0;
+    font-weight: 600;
+    font-size: 2rem;
+  }
 }
-.controls { display: flex; gap: .4rem; }
 
-.viewport { position: relative; }
+.controls {
+  display: flex;
+  gap: .4rem;
+}
+
+.viewport {
+  position: relative;
+}
 
 .track {
   display: flex;
@@ -20,23 +35,35 @@
   padding-bottom: .2rem;
   scrollbar-width: none;
 }
-.track::-webkit-scrollbar { display: none; }
+
+.track::-webkit-scrollbar {
+  display: none;
+}
 
 /* адаптивная ширина карточек — реально сжимается на телефонах */
 .item {
   scroll-snap-align: start;
   flex: 0 0 clamp(180px, 40vw, 260px);
 }
+
 @media (min-width: 600px) {
-  .item { flex-basis: clamp(180px, 40vw, 260px); }
+  .item {
+    flex-basis: clamp(180px, 40vw, 260px);
+  }
 }
+
 @media (min-width: 900px) {
-  .item { flex-basis: clamp(200px, 24vw, 280px); }
+  .item {
+    flex-basis: clamp(200px, 24vw, 280px);
+  }
 }
 
 .btnIcon {
-  display: inline-flex; justify-content: center; align-items: center;
-  width: 2.4rem; height: 2.4rem;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 2.4rem;
+  height: 2.4rem;
   background: transparent;
   color: var(--text);
   cursor: pointer;

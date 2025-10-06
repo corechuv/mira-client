@@ -175,6 +175,13 @@
   color: var(--muted);
 }
 
+.aside {
+  padding: 1rem;
+  align-self: start;
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+}
+
 /* adaptive */
 @media (max-width: 1000px) {
   .grid {
@@ -183,6 +190,11 @@
 
   .twoCols {
     grid-template-columns: 1fr;
+  }
+
+  .aside {
+    padding: 0;
+    background: transparent;
   }
 
   .previewRow {
