@@ -45,13 +45,17 @@
 
   --bg-btn: #191919;
   --menu-backdrop: #23232380;
+
+
+  --tile-bg: #000000;
+  --tile-text: #ffe6f6;
 }
 
 /* Светлая */
 :root[data-theme="light"] {
   --logo-color: #FFEFF4;
 
-  --bg-footer: #f9f9f9;
+  --bg-footer: white;
   --footer-link-text: rgb(0, 0, 0);
 
 
@@ -78,6 +82,10 @@
   --bg-search-backdrop: rgba(255, 255, 255, 0.866);
 
   --menu-backdrop: rgba(208, 208, 208, 0.5019607843);
+
+
+  --tile-bg: #fff8fd;
+  --tile-text: black;
 }
 
 /* ==== БАЗОВЫЕ СТИЛИ (как были, но на переменных) ==== */
@@ -181,7 +189,7 @@ button {
   font-weight: 500;
   padding: 0.6rem 1.2rem;
   font-size: 1.2rem;
-  border-radius: 30px;
+  border-radius: 0;
   color: white;
   border: 1px solid var(--surface-2);
   background: var(--bg-btn);
@@ -218,7 +226,7 @@ button {
   width: 100%;
   height: 46px;
   padding: 0 0.6rem;
-  border-radius: 12px;
+  border-radius: 0;
   font-size: 16px;
   font-weight: 300;
   background: var(--bg-input);
@@ -236,7 +244,7 @@ textarea {
   min-height: 80px;
   resize: none;
   padding: 1rem;
-  border-radius: 12px;
+  border-radius: 0;
   font-size: 16px;
   background: var(--surface-2);
   border: 1px solid var(--border-weak);

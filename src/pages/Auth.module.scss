@@ -31,16 +31,17 @@
 
 .tabs {
     display: grid;
-    grid-auto-flow: column;
-    justify-content: start;
+    grid-template-columns: 1fr 1fr;
     gap: .4rem;
     margin-bottom: .2rem;
+    width: 100%;
 }
 
 .tab,
 .tabActive {
+    width: 100%;
     padding: .45rem .8rem;
-    border-radius: 10px;
+    border-radius: 0;
     border: transparent;
     background: rgba(70, 70, 70, 0.03);
     color: var(--muted);
@@ -55,9 +56,8 @@
 
 .error {
     background: rgba(255, 0, 0, 0.12);
-    border: 1px solid rgba(255, 0, 0, 0.3);
     color: #ffb3b3;
-    border-radius: 10px;
+    border-radius: 0;
     padding: .5rem .7rem;
     font-size: .95rem;
 }
@@ -109,5 +109,16 @@
 @media (max-width: 560px) {
     .card {
         padding: 1rem;
+    }
+}
+
+.logo {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 30px;
+
+    img {
+        object-fit: contain;
+        max-height: 50px;
     }
 }

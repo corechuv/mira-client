@@ -1,13 +1,12 @@
 // src/components/Footer.module.scss
 .footer {
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
   padding: 2rem 0 2rem;
   background: var(--bg-footer);
 }
 
 .grid {
-  display: grid;
-  grid-template-columns: 1fr auto;
+  display: flex;
+  justify-content: center;
   gap: 1.5rem;
   align-items: start;
 }
@@ -50,22 +49,34 @@
 
 .iconSection {
   margin-top: 3rem;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   gap: 1.8rem 1.2rem;
   align-items: start;
 }
 
 .iconGroup {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
+  width: 100%;
 }
+
+.iconSGroup {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  padding: 30px 0;
+}
+
 
 .groupTitle {
   color: var(--text);
   font-size: 1rem;
   font-weight: 600;
   margin: 0;
+  display: flex;
 }
 
 .icons {
@@ -73,6 +84,7 @@
   flex-wrap: wrap;
   gap: .4rem .8rem;
   align-items: center;
+  justify-content: center;
   list-style: none;
   margin: 0;
   padding: 0;
@@ -106,12 +118,17 @@
 
 .socials {
   opacity: 0.7;
+  display: flex;
+  justify-content: center;
 }
 
 .copy {
   color: var(--text);
-  font-size: .9rem;
+  font-size: 14px;
+  font-weight: 300;
   display: flex;
+  justify-content: center;
+  padding: 14px 0;
 }
 
 /* адаптация */
@@ -139,20 +156,20 @@
 }
 
 .bottom {
-  margin-top: 3rem;
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  gap: .4rem;
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2rem;
   color: var(--muted);
   font-size: .9rem;
+  width: 100%;
 
   ul {
     list-style: none;
     margin: 0;
     padding: 0;
     display: flex;
-    flex-wrap: wrap;
+
     gap: 1rem;
   }
 }
@@ -164,13 +181,14 @@
   }
 
   .bottom ul {
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 1rem;
   }
 }
 
 .legal {
   display: flex;
+  justify-content: center;
 
   ul {
     list-style: none;
@@ -184,9 +202,9 @@
       white-space: nowrap;
 
       a {
-        font-size: 12px;
-        font-weight: 400;
-        color: var(--footer-link-text);
+        font-size: 14px;
+        font-weight: 300;
+        color: var(--tile-text);
         text-decoration: none;
       }
     }

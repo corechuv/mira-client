@@ -60,7 +60,9 @@ export default function Auth() {
   return (
     <div className={styles.shell}>
       <div className={styles.card}>
-        <LogoMark className={styles.logoMark} title="Mira Logo" />
+        <div className={styles.logo}>
+          <img src="/logo_full.png" />
+        </div>
         <div className={styles.tabs} role="tablist">
           <button
             role="tab"

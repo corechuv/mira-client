@@ -2,11 +2,12 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import s from "./Carousel.module.scss";
 import Icon from "../Icon";
 
-type Slide = {
+// === Types ===
+export type Slide = {
   id?: string | number;
   src: string;
   alt?: string;
-  href?: string; // опционально — если нужно кликать по баннеру
+  href?: string; // опционально — клик по баннеру
   content?: React.ReactNode; // опционально — оверлейный контент поверх
 };
 
@@ -39,44 +40,75 @@ export default function Carousel({
   const [isHover, setIsHover] = useState(false);
   const [isFocusWithin, setIsFocusWithin] = useState(false);
   const [dragPx, setDragPx] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isCoarsePointer, setIsCoarsePointer] = useState(false); // mobile/tablet свайп
+  const [hasHover, setHasHover] = useState(false); // для корректной паузы при hover
+
   const containerRef = useRef<HTMLDivElement | null>(null);
   const pointerIdRef = useRef<number | null>(null);
   const startXRef = useRef(0);
   const widthRef = useRef(0);
-  const rafRef = useRef<number | null>(null);
 
-  const canAutoPlay = autoPlay && !isHover && !isFocusWithin && slides.length > 1 && !prefersReducedMotion();
+  const enableSwipe = isCoarsePointer && slides.length > 1; // Desktop: свайп отключён
 
-  function prefersReducedMotion() {
-    return typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  }
+  // === media capabilities (SSR-safe) ===
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mqCoarse = window.matchMedia("(pointer: coarse)");
+    const mqHover = window.matchMedia("(hover: hover)");
 
-  // Автоплей
+    const updateCoarse = () => setIsCoarsePointer(mqCoarse.matches);
+    const updateHover = () => setHasHover(mqHover.matches);
+
+    updateCoarse();
+    updateHover();
+
+    mqCoarse.addEventListener("change", updateCoarse);
+    mqHover.addEventListener("change", updateHover);
+    return () => {
+      mqCoarse.removeEventListener("change", updateCoarse);
+      mqHover.removeEventListener("change", updateHover);
+    };
+  }, []);
+
+  const prefersReducedMotion = () =>
+    typeof window !== "undefined" &&
+    !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+  const canAutoPlay =
+    autoPlay &&
+    slides.length > 1 &&
+    !isFocusWithin &&
+    (!hasHover || !isHover) &&
+    !prefersReducedMotion();
+
+  // === Autoplay ===
   useEffect(() => {
     if (!canAutoPlay) return;
     const id = window.setInterval(() => goTo(index + 1), interval);
     return () => window.clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canAutoPlay, index, interval]);
 
-  // Сообщаем о смене индекса
+  // === External index notify ===
   useEffect(() => {
     onIndexChange?.(normalized(index));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [index]);
+  }, [index, slides.length]);
 
-  // Хелперы индекса
+  // === indexing helpers ===
   const last = slides.length - 1;
   const normalized = (i: number) => {
     if (!loop) return clamp(i, 0, last);
-    const m = slides.length;
+    const m = slides.length || 1;
     return ((i % m) + m) % m;
   };
 
-  const goTo = (i: number) => setIndex((prev) => normalized(i));
+  const goTo = (i: number) => setIndex(() => normalized(i));
   const prev = () => goTo(index - 1);
   const next = () => goTo(index + 1);
 
-  // Пересчёт ширины
+  // === track width recalculation ===
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -88,15 +120,13 @@ export default function Carousel({
     return () => ro.disconnect();
   }, []);
 
-  // Обработчики фокуса
+  // === focus handling ===
   const onFocusIn = () => setIsFocusWithin(true);
-  const onFocusOut = (e: React.FocusEvent) => {
-    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-      setIsFocusWithin(false);
-    }
+  const onFocusOut: React.FocusEventHandler<HTMLDivElement> = (e) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) setIsFocusWithin(false);
   };
 
-  // Клавиатура
+  // === keyboard ===
   const onKeyDown: React.KeyboardEventHandler<HTMLDivElement> = (e) => {
     switch (e.key) {
       case "ArrowLeft":
@@ -118,22 +148,23 @@ export default function Carousel({
     }
   };
 
-  // Свайп (Pointer Events)
+  // === swipe via Pointer Events – only for coarse pointers ===
   const onPointerDown: React.PointerEventHandler<HTMLDivElement> = (e) => {
-    if (slides.length <= 1) return;
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    if (!enableSwipe || slides.length <= 1) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
     pointerIdRef.current = e.pointerId;
     startXRef.current = e.clientX;
+    setIsDragging(true);
   };
 
   const onPointerMove: React.PointerEventHandler<HTMLDivElement> = (e) => {
+    if (!enableSwipe) return;
     if (pointerIdRef.current !== e.pointerId) return;
     const dx = e.clientX - startXRef.current;
     setDragPx(dx);
   };
 
-  const onPointerUp: React.PointerEventHandler<HTMLDivElement> = (e) => {
-    if (pointerIdRef.current !== e.pointerId) return;
+  const endDrag = () => {
     const w = widthRef.current || 1;
     const dragPercent = Math.abs(dragPx) / w;
     const threshold = 0.2; // 20% ширины
@@ -142,62 +173,115 @@ export default function Carousel({
     }
     setDragPx(0);
     pointerIdRef.current = null;
+    setIsDragging(false);
   };
 
-  // Трансформ трека (с учётом перетаскивания)
+  const onPointerUp: React.PointerEventHandler<HTMLDivElement> = (e) => {
+    if (!enableSwipe) return;
+    if (pointerIdRef.current !== e.pointerId) return;
+    endDrag();
+  };
+
+  const onPointerCancel: React.PointerEventHandler<HTMLDivElement> = () => {
+    if (!enableSwipe) return;
+    setDragPx(0);
+    pointerIdRef.current = null;
+    setIsDragging(false);
+  };
+
+  // === transform (with drag offset) ===
   const trackStyle = useMemo(() => {
     const w = widthRef.current || 1;
     const dragPercent = (dragPx / w) * 100;
     const base = -normalized(index) * 100;
     const x = base + dragPercent;
     return { transform: `translate3d(${x}%, 0, 0)` } as React.CSSProperties;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dragPx, index, slides.length]);
+
+  const current = normalized(index);
+  const isPrevDisabled = !loop && current === 0;
+  const isNextDisabled = !loop && current === last;
 
   return (
     <div
-      className={[s.carousel, className].filter(Boolean).join(" ")}
+      className={[s.carousel, className, isDragging ? s.dragging : ""].filter(Boolean).join(" ")}
       style={{ aspectRatio }}
       ref={containerRef}
-      onMouseEnter={() => setIsHover(true)}
-      onMouseLeave={() => setIsHover(false)}
+      onMouseEnter={() => hasHover && setIsHover(true)}
+      onMouseLeave={() => hasHover && setIsHover(false)}
       onFocus={onFocusIn}
       onBlur={onFocusOut}
       onKeyDown={onKeyDown}
       role="region"
       aria-roledescription="carousel"
       aria-label="Баннеры"
+      tabIndex={0}
     >
       <div
         className={s.viewport}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
+        onPointerCancel={onPointerCancel}
       >
-        <ul className={s.track} style={trackStyle}>
-          {slides.map((slide, i) => (
-            <li className={s.slide} key={slide.id ?? i} aria-hidden={normalized(index) !== i}>
-              {slide.href ? (
-                <a href={slide.href} className={s.link} tabIndex={normalized(index) === i ? 0 : -1}>
-                  <img className={s.img} src={slide.src} alt={slide.alt ?? ""} loading="lazy" />
-                  {slide.content && <div className={s.overlay}>{slide.content}</div>}
-                </a>
-              ) : (
-                <>
-                  <img className={s.img} src={slide.src} alt={slide.alt ?? ""} loading="lazy" />
-                  {slide.content && <div className={s.overlay}>{slide.content}</div>}
-                </>
-              )}
-            </li>
-          ))}
+        <ul className={s.track} style={trackStyle} role="list">
+          {slides.map((slide, i) => {
+            const active = current === i;
+            const Img = (
+              <img
+                className={s.img}
+                src={slide.src}
+                alt={slide.alt ?? ""}
+                loading={active ? "eager" : "lazy"}
+                decoding="async"
+                fetchPriority={active ? (index === 0 ? "high" : "auto") : "low"}
+                draggable={false}
+              />
+            );
+
+            return (
+              <li
+                className={s.slide}
+                key={slide.id ?? i}
+                aria-hidden={!active}
+                aria-roledescription="slide"
+                aria-label={`Слайд ${i + 1} из ${slides.length}`}
+                role="group"
+              >
+                {slide.href ? (
+                  <a href={slide.href} className={s.link} tabIndex={active ? 0 : -1} aria-current={active || undefined}>
+                    {Img}
+                    {slide.content && <div className={s.overlay}>{slide.content}</div>}
+                  </a>
+                ) : (
+                  <>
+                    {Img}
+                    {slide.content && <div className={s.overlay}>{slide.content}</div>}
+                  </>
+                )}
+              </li>
+            );
+          })}
         </ul>
       </div>
 
       {showArrows && slides.length > 1 && (
         <>
-          <button className={`${s.arrow} ${s.left}`} aria-label="Предыдущий слайд" onClick={prev}>
+          <button
+            className={`${s.arrow} ${s.left}`}
+            aria-label="Предыдущий слайд"
+            onClick={prev}
+            disabled={isPrevDisabled}
+          >
             <Icon name="arrow-left" size="1.6rem" />
           </button>
-          <button className={`${s.arrow} ${s.right}`} aria-label="Следующий слайд" onClick={next}>
+          <button
+            className={`${s.arrow} ${s.right}`}
+            aria-label="Следующий слайд"
+            onClick={next}
+            disabled={isNextDisabled}
+          >
             <Icon name="arrow-right" size="1.6rem" />
           </button>
         </>
@@ -206,7 +290,7 @@ export default function Carousel({
       {showDots && slides.length > 1 && (
         <div className={s.dots} role="tablist" aria-label="Навигация по слайдам">
           {slides.map((_, i) => {
-            const active = normalized(index) === i;
+            const active = current === i;
             return (
               <button
                 key={i}
@@ -215,11 +299,15 @@ export default function Carousel({
                 aria-label={`Слайд ${i + 1}`}
                 className={`${s.dot} ${active ? s.active : ""}`}
                 onClick={() => goTo(i)}
+                tabIndex={active ? 0 : -1}
               />
             );
           })}
         </div>
       )}
+
+      {/* скрытый live-region для скринридеров */}
+      <span className={s.srOnly} aria-live="polite">Слайд {current + 1} из {slides.length}</span>
     </div>
   );
 }

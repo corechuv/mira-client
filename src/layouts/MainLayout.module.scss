@@ -2,11 +2,11 @@
 .shell {
   background: var(--bg);
   color: var(--text);
+  position: absolute;
+  top: 0;
+  width: 100%;
 }
 
 .main {
-  max-width: 1200px;
   width: 100%;
-  margin: 0 auto;
-  padding: 1.5rem 0 3rem;
 }

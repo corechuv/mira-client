@@ -60,14 +60,15 @@ export default function Product() {
   crumbs.push({ label: product.title, current: true });
 
   return (
-    <div className="container">
+    <div className="container" style={{ marginTop: 30 }}>
       <Breadcrumbs items={[
         { label: t("breadcrumbs.home", "Главная"), to: "/" },
         { label: t("breadcrumbs.catalog", "Каталог"), to: "/catalog" },
         { label: t("product.notFound", "Товар не найден"), current: true },
       ]} />
+      <h1 className={styles.title}>{product.title}</h1>
 
-      <div className={`card ${styles.wrap}`}>
+      <div className={`${styles.wrap}`}>
         <div className={styles.left}>
           <div className={styles.gallery}>
             <div className={styles.photo}>
@@ -75,18 +76,11 @@ export default function Product() {
                 <ImagePlaceholder />
               }
             </div>
-            <div className={styles.thumbs}>
-              <div className={styles.thumb} />
-              <div className={styles.thumb} />
-              <div className={styles.thumb} />
-            </div>
           </div>
         </div>
 
         <div className={styles.right}>
-          <h1 className={styles.title}>{product.title}</h1>
           <div className={styles.meta}>
-            <span className="badge">{product.category}</span>
             <span className="badge">★ {product.rating}</span>
           </div>
           <p className={styles.desc}>{product.description}</p>

@@ -23,11 +23,11 @@ export default function ProductCard({ product }: { product: Product }) {
       <div className={styles.body}>
         <div className={styles.titleRow}>
           <Link to={`/product/${product.slug}`} className={styles.title}>{product.title}</Link>
-          <div>
+          <div style={{display: "none"}}>
             <span className="badge">{product.category}</span>
           </div>
         </div>
-        <p className={styles.desc}>{product.short}</p>
+        <p className={styles.desc} style={{display: "none"}}>{product.short}</p>
         <div className={styles.bar}>
           <div className={styles.price}>{fmtEUR(product.price)}</div>
           {/* <button className="btn btnPrimary" onClick={() => add(product)}>

@@ -15,10 +15,10 @@ type IconItem = {
 };
 
 const payments: IconItem[] = [
-  { src: "/icons/klarna_badge.svg", srcDark: "/icons/klarna_badge.svg", alt: "Klarna", h: 24 },
-  { src: "/icons/amazonpay-secondary-logo-rgb_clr.png", /* нет тёмной */   alt: "Amazon Pay", h: 24 },
   { src: "/icons/visa.svg", srcDark: "/icons/visa.svg", alt: "Visa", h: 16 },
+  { src: "/icons/klarna_badge.svg", srcDark: "/icons/klarna_badge.svg", alt: "Klarna", h: 22 },
   { src: "/icons/mastercard.svg", srcDark: "/icons/mastercard.svg", alt: "Mastercard", h: 30 },
+  { src: "/icons/amazonpay-secondary-logo-rgb_clr.png", /* нет тёмной */   alt: "Amazon Pay", h: 20 },
 ];
 
 const shipping: IconItem[] = [
@@ -91,9 +91,8 @@ export default function Footer() {
         </div>
 
         <div className={styles.iconSection}>
-
           <div className={styles.iconGroup} aria-label="Оплата">
-            <h3 className={styles.groupTitle}>{t("footer.payments", "Оплата")}</h3>
+            <h3 className={styles.groupTitle} style={{ display: "none" }}>{t("footer.payments", "Оплата")}</h3>
             <ul className={styles.icons}>
               {payments.map((i) => (
                 <li key={i.alt} className={styles.iconItem}>
@@ -112,7 +111,7 @@ export default function Footer() {
               ))}
             </ul>
           </div>
-          <div className={styles.iconGroup} aria-label="Доставка">
+          <div className={styles.iconGroup} style={{ display: "none" }} aria-label="Доставка">
             <h3 className={styles.groupTitle}>{t("footer.shipping", "Доставка")}</h3>
             <ul className={styles.icons}>
               {shipping.map((i) => (
@@ -135,19 +134,7 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className={styles.bottom}>
-          <div className={styles.legal}>
-            <ul>
-              <li><Link to="/privacy">{t("footer.privacy", "Политика конфиденциальности")}</Link></li>
-              <li><Link to="/terms">{t("footer.terms", "Условия использования")}</Link></li>
-              <li><Link to="/cookies">{t("footer.cookies", "Политика использования cookies")}</Link></li>
-              <li><Link to="/contacts">{t("footer.contacts", "Контакты")}</Link></li>
-            </ul>
-          </div>
-          <div className={styles.copy}>© {new Date().getFullYear()} Mira</div>
-        </div>
-
-        <div className={styles.iconGroup} style={{ display: "flex", marginTop: 30, marginLeft: "-18px", justifyContent: "start" }} aria-label="Соцсети">
+        <div className={styles.iconSGroup} aria-label="Соцсети">
           <ul className={`${styles.icons} ${styles.socials}`}>
             {socials.map((i) => (
               <li key={i.alt} className={styles.iconItem}>
@@ -173,6 +160,18 @@ export default function Footer() {
               </li>
             ))}
           </ul>
+        </div>
+
+        <div className={styles.bottom}>
+          <div className={styles.legal}>
+            <ul>
+              <li><Link to="/privacy">{t("footer.privacy", "Политика конфиденциальности")}</Link></li>
+              <li><Link to="/terms">{t("footer.terms", "Условия использования")}</Link></li>
+                            <li><Link to="/contacts">{t("footer.contacts", "Контакты")}</Link></li>
+              <li><Link to="/cookies">{t("footer.cookies", "Политика использования cookies")}</Link></li>
+            </ul>
+          </div>
+          <div className={styles.copy}>© {new Date().getFullYear()} Mira</div>
         </div>
       </div>
     </footer>
