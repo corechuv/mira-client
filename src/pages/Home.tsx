@@ -125,32 +125,26 @@ export default function Home() {
         </div>
       </section>
 
-        <Carousel
-          slides={slides}
-          autoPlay
-          interval={3500}
-          loop
-          showArrows
-          showDots
-          onIndexChange={(i) => console.log("index:", i)}
-        />
+      <Carousel
+        slides={slides}
+        autoPlay
+        interval={3500}
+        loop
+        showArrows
+        showDots
+        onIndexChange={(i) => console.log("index:", i)}
+      />
 
 
-      <div className="container">
-        <section className={styles.section}>
-          <CatalogTiles heading="Каталог аппаратов" items={items} minTileWidth={200} />
-        </section>
-      </div>
-      <div className="container">
-        <section className={styles.section}>
-          <ProductsRail title={t("home.popular", "Популярное")} items={top} />
-        </section>
-      </div>
-      <div className="container">
-        <section className={styles.section}>
-          <ProductsRail title={t("home.recommended", "Рекомендуем")} items={allProducts} />
-        </section>
-      </div>
+      <section className={styles.section}>
+        <CatalogTiles heading="Каталог аппаратов" items={items} minTileWidth={200} />
+      </section>
+      <section className={styles.section}>
+        <ProductsRail title={t("home.popular", "Популярное")} items={top} />
+      </section>
+      <section className={styles.section}>
+        <ProductsRail title={t("home.recommended", "Рекомендуем")} items={allProducts} />
+      </section>
 
       <Banners items={itemsS} />
     </>

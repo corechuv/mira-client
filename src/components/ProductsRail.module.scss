@@ -1,6 +1,8 @@
 // src/components/ProductsRail.module.scss
 .wrap {
   margin: 1rem 0 2rem;
+  max-width: 1024px;
+  margin: 0 auto;
 }
 
 .head {
@@ -9,6 +11,7 @@
   justify-content: space-between;
   gap: .6rem;
   margin-bottom: 2rem;
+  padding: 0 16px;
 
   h3 {
     margin: 0;
@@ -43,7 +46,7 @@
 /* адаптивная ширина карточек — реально сжимается на телефонах */
 .item {
   scroll-snap-align: start;
-  flex: 0 0 clamp(180px, 40vw, 260px);
+  flex: 0 0 clamp(220px, 40vw, 260px);
 }
 
 @media (min-width: 600px) {
