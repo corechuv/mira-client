@@ -74,7 +74,7 @@ const slides = [
   { src: "/banners/IMG_3.png", alt: "Новая коллекция" },
 ];
 
-const itemsS: BannerItem[] = [
+const items1: BannerItem[] = [
   {
     image: "/banners/IMG_2.png",
     title: "Banner",
@@ -83,6 +83,9 @@ const itemsS: BannerItem[] = [
     ctaLabel: "Подробнее",
     ctaHref: "more-1",
   },
+];
+
+const items2: BannerItem[] = [
   {
     image: "/banners/IMG_1.png",
     title: "Banner 2",
@@ -142,11 +145,11 @@ export default function Home() {
       <section className={styles.section}>
         <ProductsRail title={t("home.popular", "Популярное")} items={top} />
       </section>
+      <Banners items={items1} />
       <section className={styles.section}>
         <ProductsRail title={t("home.recommended", "Рекомендуем")} items={allProducts} />
       </section>
-
-      <Banners items={itemsS} />
+      <Banners items={items2} />
     </>
   );
 }
