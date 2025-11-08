@@ -15,7 +15,9 @@
 }
 
 .stackFull {
-    /* каждая секция на всю высоту экрана, страница просто скроллится вниз */
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
 .banner {
