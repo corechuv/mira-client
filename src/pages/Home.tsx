@@ -145,11 +145,15 @@ export default function Home() {
       <section className={styles.section}>
         <ProductsRail title={t("home.popular", "Популярное")} items={top} />
       </section>
-      <Banners items={items1} />
+      <section className={styles.section}>
+        <Banners items={items1} />
+      </section>
       <section className={styles.section}>
         <ProductsRail title={t("home.recommended", "Рекомендуем")} items={allProducts} />
       </section>
-      <Banners items={items2} />
+      <section className={styles.section}>
+        <Banners items={items2} />
+      </section>
     </>
   );
 }
