@@ -103,7 +103,6 @@ export default function Home() {
 
         <Carousel
           slides={slides}
-          aspectRatio="21/6"
           autoPlay
           interval={3500}
           loop

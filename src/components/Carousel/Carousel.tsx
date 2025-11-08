@@ -20,7 +20,6 @@ export type CarouselProps = {
   loop?: boolean; // default: true
   showArrows?: boolean; // default: true
   showDots?: boolean; // default: true
-  aspectRatio?: string; // CSS aspect-ratio, например "16/9" | "3/1"; default: "16/9"
   onIndexChange?: (index: number) => void;
 };
 
@@ -33,7 +32,6 @@ export default function Carousel({
   loop = true,
   showArrows = true,
   showDots = true,
-  aspectRatio = "16/9",
   onIndexChange,
 }: CarouselProps) {
   const [index, setIndex] = useState(startIndex);
@@ -206,7 +204,6 @@ export default function Carousel({
   return (
     <div
       className={[s.carousel, className, isDragging ? s.dragging : ""].filter(Boolean).join(" ")}
-      style={{ aspectRatio }}
       ref={containerRef}
       onMouseEnter={() => hasHover && setIsHover(true)}
       onMouseLeave={() => hasHover && setIsHover(false)}

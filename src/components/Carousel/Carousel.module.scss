@@ -10,6 +10,10 @@
   color: #fff;
   user-select: none;
   margin-bottom: 30px;
+
+  @media (min-width: 1024px) {
+    aspect-ratio: 21/6;
+  }
 }
 
 /* Соотношение сторон задаётся через inline-style aspect-ratio */
