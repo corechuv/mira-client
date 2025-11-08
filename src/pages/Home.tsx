@@ -93,6 +93,9 @@ const items2: BannerItem[] = [
     ctaLabel: "Купить",
     ctaHref: "buy",
   },
+];
+
+const items3: BannerItem[] = [
   {
     image: "/banners/IMG_3.png",
     title: "Banner 3",
@@ -149,10 +152,16 @@ export default function Home() {
         <Banners items={items1} />
       </section>
       <section className={styles.section}>
-        <ProductsRail title={t("home.recommended", "Рекомендуем")} items={allProducts} />
+        <ProductsRail title={t("home.recommended", "Новые")} items={allProducts} />
       </section>
       <section className={styles.section}>
         <Banners items={items2} />
+      </section>
+      <section className={styles.section}>
+        <ProductsRail title={t("home.recommended", "Рекомендуем")} items={allProducts} />
+      </section>
+      <section className={styles.section}>
+        <Banners items={items3} />
       </section>
     </>
   );
