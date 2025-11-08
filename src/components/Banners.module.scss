@@ -71,14 +71,16 @@
     font-size: clamp(12px, 1.5vw, 14px);
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: var(--muted);
+    color: #ffe6f6;
     margin-bottom: 8px;
 }
 
 .title {
     font-size: clamp(28px, 5vw, 54px);
     line-height: 1.05;
-    margin: 0 0 10px 0;
+    text-transform: uppercase;
+    margin: 10px 0 10px 0;
+    color: white;
 }
 
 .desc {
