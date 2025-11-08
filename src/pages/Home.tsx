@@ -7,6 +7,7 @@ import { products as allProducts } from "@/data/products"; // для длинн�
 import { useI18n } from "@/i18n/I18nContext";
 import Carousel from "@/components/Carousel/Carousel";
 import CatalogTiles, { CatalogItem } from "@/components/CatalogTiles/CatalogTiles";
+import Banners, { BannerItem } from "@/components/Banners";
 
 const items: CatalogItem[] = [
   {
@@ -73,6 +74,29 @@ const slides = [
   { src: "/banners/IMG_3.png", alt: "Новая коллекция" },
 ];
 
+const itemsS: BannerItem[] = [
+  {
+    image: "/banners/IMG_2.png",
+    title: "Banner",
+    subtitle: "Новинка",
+    description: "Короткий текст о продукте/акции",
+    ctaLabel: "Подробнее",
+    ctaHref: "more-1",
+  },
+  {
+    image: "/banners/IMG_1.png",
+    title: "Banner 2",
+    description: "Описание второй карточки",
+    ctaLabel: "Купить",
+    ctaHref: "buy",
+  },
+  {
+    image: "/banners/IMG_3.png",
+    title: "Banner 3",
+    subtitle: "Sale",
+    description: "Список...",
+  },
+];
 
 export default function Home() {
   const { products } = useProducts();
@@ -127,6 +151,8 @@ export default function Home() {
           <ProductsRail title={t("home.recommended", "Рекомендуем")} items={allProducts} />
         </section>
       </div>
+
+      <Banners items={itemsS} />
     </>
   );
 }

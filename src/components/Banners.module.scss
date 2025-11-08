@@ -1,0 +1,147 @@
+/* переменные — можно править под стиль проекта */
+:root {
+    --pad: clamp(16px, 4vw, 64px);
+    --card-bg: rgba(20, 20, 20, 0.55);
+    /* плоский полупрозрачный фон */
+    --text: #ffffff;
+    --muted: #d1d1d1;
+    --cta-bg: #ffffff;
+    --cta-text: #111111;
+    --radius: 14px;
+}
+
+.stack {
+    width: 100%;
+}
+
+.stackFull {
+    /* каждая секция на всю высоту экрана, страница просто скроллится вниз */
+}
+
+.banner {
+    position: relative;
+    width: 100%;
+    min-height: clamp(300px, 3vw, 600px);
+    /* “на весь экран”, учитывает мобильные браузеры */
+    color: var(--text);
+    display: grid;
+    align-content: center;
+    isolation: isolate;
+    /* чтобы overlay не влиял за пределами */
+    overflow: clip;
+}
+
+/* фон-картинка */
+.bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    /* покрывает весь экран */
+    object-position: center;
+    z-index: -2;
+}
+
+/* затемнение/градиент под контент */
+.overlay {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    /* направление градиента меняется через .left / .right ниже */
+}
+
+/* контентная область */
+.content {
+    box-sizing: border-box;
+    width: min(720px, 92vw);
+    margin: 0;
+    padding: clamp(16px, 3vw, 28px);
+    background: var(--card-bg);
+    backdrop-filter: saturate(120%) blur(2px);
+
+    /* расположение внутри секции */
+    margin-inline: var(--pad);
+}
+
+.subtitle {
+    display: inline-block;
+    font-size: clamp(12px, 1.5vw, 14px);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+}
+
+.title {
+    font-size: clamp(28px, 5vw, 54px);
+    line-height: 1.05;
+    margin: 0 0 10px 0;
+}
+
+.desc {
+    font-size: clamp(14px, 2.2vw, 18px);
+    line-height: 1.5;
+    color: #f0f0f0;
+    margin: 0 0 18px 0;
+}
+
+.cta {
+    display: inline-block;
+    padding: 12px 18px;
+    background: var(--tile-bg);
+    color: var(--cta-text);
+    border-radius: 0;
+    text-decoration: none;
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--tile-text);
+    transition: transform .15s ease-out;
+    text-transform: uppercase;
+}
+
+.cta:focus-visible,
+.cta:hover {
+    transform: translateY(-1px);
+}
+
+/* Чередование сторон */
+.left .content {
+    margin-left: var(--pad);
+    margin-right: auto;
+}
+
+.right .content {
+    margin-left: auto;
+    margin-right: var(--pad);
+}
+
+/* Градиент зависит от стороны контента */
+.left .overlay {
+    background:
+        linear-gradient(90deg, rgba(0, 0, 0, 0.52) 0%, rgba(0, 0, 0, 0.18) 45%, rgba(0, 0, 0, 0) 80%),
+        linear-gradient(0deg, rgba(0, 0, 0, 0.20), rgba(0, 0, 0, 0.20));
+}
+
+.right .overlay {
+    background:
+        linear-gradient(270deg, rgba(0, 0, 0, 0.52) 0%, rgba(0, 0, 0, 0.18) 45%, rgba(0, 0, 0, 0) 80%),
+        linear-gradient(0deg, rgba(0, 0, 0, 0.20), rgba(0, 0, 0, 0.20));
+}
+
+/* Мобильная адаптация — на узких экранах кладём карточку вниз на всю ширину */
+@media (max-width: 640px) {
+    .content {
+        width: calc(100% - 2 * var(--pad));
+        margin-inline: var(--pad) !important;
+        margin-bottom: calc(var(--pad) + env(safe-area-inset-bottom, 0));
+    }
+
+    .left .overlay,
+    .right .overlay {
+        /* более равномерное затемнение на мобиле */
+        background:
+            linear-gradient(0deg, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.10) 65%),
+            linear-gradient(0deg, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.12));
+    }
+}
