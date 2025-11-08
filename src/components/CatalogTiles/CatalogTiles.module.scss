@@ -17,11 +17,11 @@
 .grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(var(--tile-min), 1fr));
-    gap: clamp(10px, 2.2vw, 20px);
+    gap: clamp(16px, 2.2vw, 20px);
 
     @media (max-width: 768px) {
         grid-template-columns: 1fr 1fr;
-        padding: 0 16px;
+        padding: 0;
     }
 }
 
