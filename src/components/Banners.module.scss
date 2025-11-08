@@ -61,9 +61,6 @@
     padding: clamp(16px, 3vw, 28px);
     background: var(--card-bg);
     backdrop-filter: saturate(120%) blur(2px);
-
-    /* расположение внутри секции */
-    margin-inline: var(--pad);
 }
 
 .subtitle {
@@ -111,13 +108,11 @@
 
 /* Чередование сторон */
 .left .content {
-    margin-left: var(--pad);
     margin-right: auto;
 }
 
 .right .content {
     margin-left: auto;
-    margin-right: var(--pad);
 }
 
 /* Градиент зависит от стороны контента */
@@ -137,8 +132,6 @@
 @media (max-width: 640px) {
     .content {
         width: calc(100% - 2 * var(--pad));
-        margin-inline: var(--pad) !important;
-        margin-bottom: calc(var(--pad) + env(safe-area-inset-bottom, 0));
     }
 
     .left .overlay,
