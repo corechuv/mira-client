@@ -54,6 +54,8 @@ const DemoAnalytics: React.FC = () => {
 
 export default function App() {
   return (
+    {/*
+
     <ConsentProvider
       cookieName="myapp_consent"
       cookieDays={365}
@@ -91,5 +93,6 @@ export default function App() {
 
       <DemoAnalytics />
     </ConsentProvider>
+    */}
   );
 }
